@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Plan Lane Builder</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Diagram workspace</p>
+        <h1>Plan Lane Builder</h1>
+      </div>
+      <div class="topbar-actions">
+        <button class="button ghost" id="resetSample" type="button">Sample</button>
+        <button class="button ghost" id="printDiagram" type="button">Print</button>
+        <button class="button ghost" id="exportPng" type="button">Export PNG</button>
+        <button class="button primary" id="exportSvg" type="button">Export SVG</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="editor" aria-label="Diagram editor">
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Timeline</h2>
+          </div>
+          <label class="field">
+            <span>Title</span>
+            <input id="projectTitle" type="text" autocomplete="off" />
+          </label>
+          <div class="field">
+            <span>Scale</span>
+            <div class="segmented" role="group" aria-label="Timeline scale">
+              <button id="modeWeeks" type="button" data-mode="weeks">Weeks</button>
+              <button id="modeSprints" type="button" data-mode="sprints">Sprints</button>
+              <button id="modeDates" type="button" data-mode="dates">Dates</button>
+            </div>
+          </div>
+          <div class="field-pair">
+            <label class="field">
+              <span>Columns</span>
+              <input id="columnCount" type="number" min="1" max="24" />
+            </label>
+            <label class="field date-only">
+              <span>Start date</span>
+              <input id="startDate" type="date" />
+            </label>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Swim Lanes</h2>
+            <button class="icon-button" id="addLane" type="button" title="Add lane" aria-label="Add lane">+</button>
+          </div>
+          <div id="laneEditor" class="stack"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Milestones</h2>
+            <button class="icon-button" id="addMilestone" type="button" title="Add milestone" aria-label="Add milestone">+</button>
+          </div>
+          <div id="milestoneEditor" class="stack"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Data</h2>
+          </div>
+          <div class="button-row">
+            <button class="button ghost" id="copyJson" type="button">Copy JSON</button>
+            <label class="button ghost file-button">
+              Import JSON
+              <input id="importJson" type="file" accept="application/json" />
+            </label>
+          </div>
+          <p class="hint" id="statusText" aria-live="polite"></p>
+        </section>
+      </aside>
+
+      <section class="canvas-shell" aria-label="Diagram preview">
+        <div class="preview-toolbar">
+          <div>
+            <p class="eyebrow">Live preview</p>
+            <h2 id="previewTitle"></h2>
+          </div>
+          <label class="toggle">
+            <input id="showLegend" type="checkbox" checked />
+            <span>Milestone strip</span>
+          </label>
+        </div>
+        <div class="diagram-scroll">
+          <div id="diagram" class="diagram"></div>
+        </div>
+      </section>
+    </main>
+
+    <template id="laneTemplate">
+      <article class="editor-card">
+        <div class="card-top">
+          <strong class="card-title"></strong>
+          <button class="mini-danger" type="button">Remove</button>
+        </div>
+        <label class="field">
+          <span>Phase</span>
+          <input data-key="name" type="text" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>Label</span>
+          <input data-key="subtitle" type="text" autocomplete="off" />
+        </label>
+        <div class="field-grid">
+          <label class="field">
+            <span>Start</span>
+            <input data-key="start" type="number" min="1" />
+          </label>
+          <label class="field">
+            <span>Duration</span>
+            <input data-key="duration" type="number" min="1" />
+          </label>
+          <label class="field">
+            <span>Color</span>
+            <input data-key="color" type="color" />
+          </label>
+          <label class="field">
+            <span>Icon</span>
+            <select data-key="icon"></select>
+          </label>
+        </div>
+      </article>
+    </template>
+
+    <template id="milestoneTemplate">
+      <article class="editor-card">
+        <div class="card-top">
+          <strong class="card-title"></strong>
+          <button class="mini-danger" type="button">Remove</button>
+        </div>
+        <label class="field">
+          <span>Name</span>
+          <input data-key="name" type="text" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>Detail</span>
+          <input data-key="detail" type="text" autocomplete="off" />
+        </label>
+        <div class="field-grid">
+          <label class="field">
+            <span>Position</span>
+            <input data-key="position" type="number" min="1" />
+          </label>
+          <label class="field">
+            <span>Color</span>
+            <input data-key="color" type="color" />
+          </label>
+          <label class="field wide">
+            <span>Icon</span>
+            <select data-key="icon"></select>
+          </label>
+        </div>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
