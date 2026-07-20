@@ -1,0 +1,8 @@
+services:
+  plan-lane-builder:
+    build: .
+    image: plan-lane-builder:latest
+    container_name: plan-lane-builder
+    restart: unless-stopped
+    ports:
+      - "8080:80"
