@@ -122,7 +122,8 @@ function columnLabel(index) {
   return `Week ${index}`;
 }
 
-function render() {
+function render(options = {}) {
+  const { rebuildEditors = true } = options;
   state.columns = clamp(Number(state.columns) || 1, 1, 24);
   state.lanes = state.lanes.map((lane) => ({
     ...lane,
@@ -136,7 +137,7 @@ function render() {
 
   saveState();
   renderControls();
-  renderEditors();
+  if (rebuildEditors) renderEditors();
   renderDiagram();
 }
 
@@ -161,7 +162,7 @@ function renderEditors() {
     collection: state.lanes,
     onUpdate: (index, key, value) => {
       state.lanes[index][key] = value;
-      render();
+      render({ rebuildEditors: false });
     },
     onRemove: (index) => {
       state.lanes.splice(index, 1);
@@ -175,7 +176,7 @@ function renderEditors() {
     collection: state.milestones,
     onUpdate: (index, key, value) => {
       state.milestones[index][key] = value;
-      render();
+      render({ rebuildEditors: false });
     },
     onRemove: (index) => {
       state.milestones.splice(index, 1);
@@ -204,6 +205,7 @@ function renderCollectionEditor({ target, templateId, collection, onUpdate, onRe
       input.addEventListener("input", () => {
         const value = input.type === "number" ? Number(input.value) : input.value;
         onUpdate(index, key, value);
+        if (key === "name") node.querySelector(".card-title").textContent = value || "Untitled";
       });
     });
 
