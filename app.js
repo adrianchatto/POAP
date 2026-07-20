@@ -68,7 +68,7 @@ function normalizeState(next) {
   return {
     ...structuredClone(sampleState),
     ...next,
-    columns: clamp(Number(next.columns) || 10, 1, 24),
+    columns: clamp(Number(next.columns) || 10, 1, 52),
     lanes: Array.isArray(next.lanes) ? next.lanes.map(normalizeLane) : [],
     milestones: Array.isArray(next.milestones) ? next.milestones.map(normalizeMilestone) : [],
   };
@@ -78,8 +78,8 @@ function normalizeLane(lane) {
   return {
     name: String(lane.name || "New phase"),
     subtitle: String(lane.subtitle || ""),
-    start: clamp(Number(lane.start) || 1, 1, 24),
-    duration: clamp(Number(lane.duration) || 1, 1, 24),
+    start: clamp(Number(lane.start) || 1, 1, 52),
+    duration: clamp(Number(lane.duration) || 1, 1, 52),
     color: validColor(lane.color) ? lane.color : "#1769f2",
     icon: iconOptions.some(([value]) => value === lane.icon) ? lane.icon : "dot",
   };
@@ -89,7 +89,7 @@ function normalizeMilestone(milestone) {
   return {
     name: String(milestone.name || "Milestone"),
     detail: String(milestone.detail || ""),
-    position: clamp(Number(milestone.position) || 1, 1, 24),
+    position: clamp(Number(milestone.position) || 1, 1, 52),
     color: validColor(milestone.color) ? milestone.color : "#1769f2",
     icon: iconOptions.some(([value]) => value === milestone.icon) ? milestone.icon : "star",
   };
@@ -108,7 +108,7 @@ function getIcon(key) {
 }
 
 function formatDuration(duration) {
-  const unit = state.mode === "sprints" ? "sprint" : "week";
+  const unit = state.mode === "weeks" ? "week" : "sprint";
   return `${duration} ${unit}${duration === 1 ? "" : "s"}`;
 }
 
@@ -116,15 +116,20 @@ function columnLabel(index) {
   if (state.mode === "sprints") return `Sprint ${index}`;
   if (state.mode === "dates") {
     const date = new Date(`${state.startDate || sampleState.startDate}T00:00:00`);
-    date.setDate(date.getDate() + (index - 1) * 7);
-    return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    date.setDate(date.getDate() + (index - 1) * 14);
+    return `S${index - 1}\n${formatSprintDate(date)}`;
   }
   return `Week ${index}`;
 }
 
+function formatSprintDate(date) {
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${date.getDate()} ${months[date.getMonth()]}`;
+}
+
 function render(options = {}) {
   const { rebuildEditors = true } = options;
-  state.columns = clamp(Number(state.columns) || 1, 1, 24);
+  state.columns = clamp(Number(state.columns) || 1, 1, 52);
   state.lanes = state.lanes.map((lane) => ({
     ...lane,
     start: clamp(lane.start, 1, state.columns),
@@ -353,10 +358,10 @@ function exportSvg() {
 }
 
 function buildSvg() {
-  const phaseWidth = 260;
-  const cellWidth = 162;
-  const headerHeight = 78;
-  const rowHeight = 126;
+  const phaseWidth = 300;
+  const cellWidth = 88;
+  const headerHeight = 58;
+  const rowHeight = 72;
   const chartWidth = phaseWidth + state.columns * cellWidth;
   const chartHeight = headerHeight + state.lanes.length * rowHeight;
   const legendHeight = state.showLegend && state.milestones.length ? 180 : 0;
@@ -377,25 +382,25 @@ function buildSvg() {
     parts.push(`<line x1="1" y1="${y}" x2="${chartWidth + 1}" y2="${y}" stroke="#e4e7eb"/>`);
   }
 
-  parts.push(svgText("PHASE", phaseWidth / 2, 49, 16, "#16181d", 900, "middle"));
+  parts.push(svgText("PHASE", phaseWidth / 2, 36, 14, "#16181d", 900, "middle"));
   for (let col = 1; col <= state.columns; col += 1) {
-    parts.push(svgText(columnLabel(col), phaseWidth + (col - 0.5) * cellWidth, 49, 18, "#16181d", 900, "middle"));
+    parts.push(...svgMultilineText(columnLabel(col), phaseWidth + (col - 0.5) * cellWidth, 27, 12, "#16181d", 900, "middle"));
   }
 
   state.lanes.forEach((lane, index) => {
     const top = headerHeight + index * rowHeight;
     const centerY = top + rowHeight / 2;
-    parts.push(`<circle cx="44" cy="${centerY}" r="27" fill="${lane.color}"/>`);
-    parts.push(svgText(getIcon(lane.icon), 44, centerY + 9, 25, "#ffffff", 900, "middle"));
-    parts.push(...svgWrappedText(lane.name, 90, top + 44, 22, "#16181d", 900, 15));
-    parts.push(svgText(lane.subtitle, 90, top + 80, 16, lane.color, 900, "start"));
-    parts.push(svgText(formatDuration(lane.duration), 90, top + 104, 16, "#16181d", 400, "start"));
+    parts.push(`<circle cx="37" cy="${centerY}" r="20" fill="${lane.color}"/>`);
+    parts.push(svgText(getIcon(lane.icon), 37, centerY + 7, 20, "#ffffff", 900, "middle"));
+    parts.push(...svgWrappedText(lane.name, 74, top + 28, 15, "#16181d", 900, 24));
+    parts.push(svgText(lane.subtitle, 74, top + 52, 12, lane.color, 900, "start"));
+    parts.push(svgText(formatDuration(lane.duration), 74, top + 67, 12, "#16181d", 400, "start"));
 
-    const barX = phaseWidth + (lane.start - 1) * cellWidth + 8;
-    const barY = top + 36;
-    const barWidth = lane.duration * cellWidth - 16;
-    parts.push(`<rect x="${barX}" y="${barY}" width="${barWidth}" height="56" rx="14" fill="${lane.color}"/>`);
-    parts.push(svgText(formatDuration(lane.duration), barX + barWidth / 2, barY + 35, 18, "#ffffff", 900, "middle"));
+    const barX = phaseWidth + (lane.start - 1) * cellWidth + 5;
+    const barY = top + 18;
+    const barWidth = lane.duration * cellWidth - 10;
+    parts.push(`<rect x="${barX}" y="${barY}" width="${barWidth}" height="36" rx="9" fill="${lane.color}"/>`);
+    parts.push(svgText(formatDuration(lane.duration), barX + barWidth / 2, barY + 23, 12, "#ffffff", 900, "middle"));
   });
 
   const goLive = state.milestones.find((milestone) => milestone.name.toLowerCase().includes("go live"));
@@ -461,6 +466,12 @@ function exportPng() {
 
 function svgText(text, x, y, size, color, weight, anchor) {
   return `<text x="${x}" y="${y}" fill="${color}" font-family="Inter, Arial, sans-serif" font-size="${size}" font-weight="${weight}" text-anchor="${anchor}">${escapeHtml(text)}</text>`;
+}
+
+function svgMultilineText(text, x, y, size, color, weight, anchor) {
+  return String(text)
+    .split("\n")
+    .map((line, index) => svgText(line, x, y + index * (size + 3), size, color, weight, anchor));
 }
 
 function svgWrappedText(text, x, y, size, color, weight, maxChars, anchor = "start") {

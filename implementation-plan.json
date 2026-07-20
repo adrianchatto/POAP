@@ -1,0 +1,138 @@
+{
+  "title": "Implementation Plan",
+  "mode": "dates",
+  "columns": 19,
+  "startDate": "2026-08-17",
+  "showLegend": true,
+  "lanes": [
+    {
+      "name": "WS1 - Initiation & WoW",
+      "subtitle": "S0: 17 Aug - 28 Aug",
+      "start": 1,
+      "duration": 1,
+      "color": "#21855f",
+      "icon": "flag"
+    },
+    {
+      "name": "WS2 - Discovery",
+      "subtitle": "S1-S2: 31 Aug - 25 Sep",
+      "start": 2,
+      "duration": 2,
+      "color": "#40bfc0",
+      "icon": "search"
+    },
+    {
+      "name": "WS3 - Design & Architecture",
+      "subtitle": "S2-S4: 14 Sep - 23 Oct",
+      "start": 3,
+      "duration": 3,
+      "color": "#8e44ad",
+      "icon": "pencil"
+    },
+    {
+      "name": "WS4 - Core Platform Build",
+      "subtitle": "S3-S5: 28 Sep - 6 Nov",
+      "start": 4,
+      "duration": 3,
+      "color": "#3182c4",
+      "icon": "gear"
+    },
+    {
+      "name": "WS5 - Core Integrations Build",
+      "subtitle": "S3-S8: 28 Sep - 18 Dec",
+      "start": 4,
+      "duration": 6,
+      "color": "#1d7893",
+      "icon": "gear"
+    },
+    {
+      "name": "WS6 - Change, Comms & Training",
+      "subtitle": "S4-S17: 12 Oct - 23 Apr",
+      "start": 5,
+      "duration": 14,
+      "color": "#cf5632",
+      "icon": "star"
+    },
+    {
+      "name": "WS7 - AI Agent Build",
+      "subtitle": "S5-S14: 26 Oct - 12 Mar",
+      "start": 6,
+      "duration": 10,
+      "color": "#b72e2e",
+      "icon": "gear"
+    },
+    {
+      "name": "WS8 - Reporting & Dashboards",
+      "subtitle": "S5-S7: 26 Oct - 4 Dec",
+      "start": 6,
+      "duration": 3,
+      "color": "#7f3f98",
+      "icon": "chart"
+    },
+    {
+      "name": "WS9 - Data Integration",
+      "subtitle": "S6-S8: 9 Nov - 18 Dec",
+      "start": 7,
+      "duration": 3,
+      "color": "#2b7aa8",
+      "icon": "chart"
+    },
+    {
+      "name": "WS10 - Brand 1 Build",
+      "subtitle": "S7-S12: 23 Nov - 12 Feb",
+      "start": 8,
+      "duration": 6,
+      "color": "#17651f",
+      "icon": "rocket"
+    },
+    {
+      "name": "WS10 - Brand 2 Build",
+      "subtitle": "S8-S13: 7 Dec - 26 Feb",
+      "start": 9,
+      "duration": 6,
+      "color": "#17651f",
+      "icon": "rocket"
+    },
+    {
+      "name": "WS10 - Brand 3 Build",
+      "subtitle": "S9-S14: 21 Dec - 12 Mar",
+      "start": 10,
+      "duration": 6,
+      "color": "#27ae60",
+      "icon": "rocket"
+    },
+    {
+      "name": "WS10 - Brand 4 Build",
+      "subtitle": "S10-S15: 4 Jan - 26 Mar",
+      "start": 11,
+      "duration": 6,
+      "color": "#52be80",
+      "icon": "rocket"
+    },
+    {
+      "name": "WS10 - Brand 5 Build",
+      "subtitle": "S11-S16: 18 Jan - 9 Apr",
+      "start": 12,
+      "duration": 6,
+      "color": "#5cbf5c",
+      "icon": "rocket"
+    },
+    {
+      "name": "WS10 - Brand 6 Build",
+      "subtitle": "S12-S17: 1 Feb - 23 Apr",
+      "start": 13,
+      "duration": 6,
+      "color": "#5cbf5c",
+      "icon": "rocket"
+    },
+    {
+      "name": "WS11 - Product Backlog",
+      "subtitle": "S1-S18: 31 Aug - 7 May",
+      "start": 2,
+      "duration": 18,
+      "color": "#9b8ac8",
+      "icon": "dot"
+    }
+  ],
+  "milestones": []
+}

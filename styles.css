@@ -9,10 +9,10 @@
   --accent-dark: #0f55cf;
   --radius: 8px;
   --shadow: 0 18px 45px rgba(24, 30, 42, 0.08);
-  --phase-width: 260px;
-  --cell-width: 162px;
-  --header-height: 78px;
-  --row-height: 126px;
+  --phase-width: 300px;
+  --cell-width: 88px;
+  --header-height: 58px;
+  --row-height: 72px;
 }
 
 * {
@@ -338,9 +338,11 @@ button:focus-visible {
   justify-content: center;
   background: #fbfcfe;
   color: var(--ink);
-  font-size: 18px;
+  font-size: 13px;
   font-weight: 900;
+  line-height: 1.15;
   text-align: center;
+  white-space: pre-line;
 }
 
 .cell.phase-header {
@@ -350,10 +352,10 @@ button:focus-visible {
 
 .phase-cell {
   display: grid;
-  grid-template-columns: 74px 1fr;
+  grid-template-columns: 50px 1fr;
   align-items: center;
-  gap: 16px;
-  padding: 14px 16px;
+  gap: 12px;
+  padding: 10px 12px;
   min-width: 0;
 }
 
@@ -370,43 +372,43 @@ button:focus-visible {
 }
 
 .phase-icon {
-  width: 54px;
-  height: 54px;
-  font-size: 26px;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
 }
 
 .phase-name {
   margin: 0;
-  font-size: 22px;
+  font-size: 15px;
   font-weight: 900;
-  line-height: 1.05;
+  line-height: 1.12;
 }
 
 .phase-subtitle {
-  margin: 7px 0 2px;
-  font-size: 16px;
+  margin: 4px 0 1px;
+  font-size: 12px;
   font-weight: 900;
 }
 
 .phase-duration {
   margin: 0;
-  font-size: 16px;
+  font-size: 12px;
 }
 
 .bar {
   position: absolute;
-  top: calc(var(--header-height) + (var(--row) * var(--row-height)) + 36px);
-  left: calc(var(--phase-width) + ((var(--start) - 1) * var(--cell-width)) + 8px);
-  width: calc((var(--duration) * var(--cell-width)) - 16px);
-  height: 56px;
+  top: calc(var(--header-height) + (var(--row) * var(--row-height)) + 18px);
+  left: calc(var(--phase-width) + ((var(--start) - 1) * var(--cell-width)) + 5px);
+  width: calc((var(--duration) * var(--cell-width)) - 10px);
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 16px;
-  border-radius: 14px;
+  padding: 0 8px;
+  border-radius: 9px;
   background: var(--bar-color);
   color: #ffffff;
-  font-size: 18px;
+  font-size: 12px;
   font-weight: 900;
   text-align: center;
   box-shadow: inset 0 -10px 18px rgba(0, 0, 0, 0.1);
