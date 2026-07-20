@@ -1,8 +1,14 @@
 services:
   plan-lane-builder:
-    build: .
-    image: plan-lane-builder:latest
-    container_name: plan-lane-builder
+    image: nginx:1.27-alpine
+    container_name: poap-plan-lane-builder
     restart: unless-stopped
     ports:
       - "8095:80"
+    command: >
+      /bin/sh -c "set -eu;
+      apk add --no-cache curl;
+      curl -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/index.html -o /usr/share/nginx/html/index.html;
+      curl -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/styles.css -o /usr/share/nginx/html/styles.css;
+      curl -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/app.js -o /usr/share/nginx/html/app.js;
+      exec nginx -g 'daemon off;'"
