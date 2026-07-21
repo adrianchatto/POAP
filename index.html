@@ -3,14 +3,18 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Plan Lane Builder</title>
+    <title>Delivery Diagram Builder</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="topbar">
       <div>
         <p class="eyebrow">Diagram workspace</p>
-        <h1>Plan Lane Builder</h1>
+        <h1>Delivery Diagram Builder</h1>
+        <nav class="app-tabs" aria-label="Diagram type">
+          <button class="active" id="planTab" type="button" data-tool="plan">Plan on a Page</button>
+          <button id="raciTab" type="button" data-tool="raci">RACI Matrix</button>
+        </nav>
       </div>
       <div class="topbar-actions">
         <button class="button ghost" id="resetSample" type="button">Sample</button>
@@ -21,7 +25,7 @@
     </header>
 
     <main class="workspace">
-      <aside class="editor" aria-label="Diagram editor">
+      <aside class="editor tool-panel" id="planEditor" aria-label="Plan editor">
         <section class="panel">
           <div class="panel-heading">
             <h2>Timeline</h2>
@@ -81,6 +85,52 @@
         </section>
       </aside>
 
+      <aside class="editor tool-panel hidden" id="raciEditor" aria-label="RACI editor">
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>RACI</h2>
+          </div>
+          <label class="field">
+            <span>Title</span>
+            <input id="raciTitle" type="text" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>Opportunity</span>
+            <input id="raciOpportunity" type="text" autocomplete="off" placeholder="Optional opportunity name or ID" />
+          </label>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Roles</h2>
+            <button class="icon-button" id="addRaciRole" type="button" title="Add role" aria-label="Add role">+</button>
+          </div>
+          <div id="raciRoleEditor" class="stack"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Activities</h2>
+            <button class="icon-button" id="addRaciActivity" type="button" title="Add activity" aria-label="Add activity">+</button>
+          </div>
+          <div id="raciActivityEditor" class="stack"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Data</h2>
+          </div>
+          <div class="button-row">
+            <button class="button ghost" id="copyRaciJson" type="button">Copy JSON</button>
+            <label class="button ghost file-button">
+              Import JSON
+              <input id="importRaciJson" type="file" accept="application/json" />
+            </label>
+          </div>
+          <p class="hint" id="raciStatusText" aria-live="polite"></p>
+        </section>
+      </aside>
+
       <section class="canvas-shell" aria-label="Diagram preview">
         <div class="preview-toolbar">
           <div>
@@ -91,6 +141,12 @@
             <input id="showLegend" type="checkbox" checked />
             <span>Milestone strip</span>
           </label>
+          <div class="raci-key hidden" id="raciKey" aria-label="RACI key">
+            <span><strong>R</strong> Responsible</span>
+            <span><strong>A</strong> Accountable</span>
+            <span><strong>C</strong> Consulted</span>
+            <span><strong>I</strong> Informed</span>
+          </div>
         </div>
         <div class="diagram-scroll">
           <div id="diagram" class="diagram"></div>
@@ -161,6 +217,37 @@
             <select data-key="icon"></select>
           </label>
         </div>
+      </article>
+    </template>
+
+    <template id="raciRoleTemplate">
+      <article class="editor-card">
+        <div class="card-top">
+          <strong class="card-title"></strong>
+          <button class="mini-danger" type="button">Remove</button>
+        </div>
+        <label class="field">
+          <span>Role</span>
+          <input data-key="name" type="text" autocomplete="off" />
+        </label>
+      </article>
+    </template>
+
+    <template id="raciActivityTemplate">
+      <article class="editor-card">
+        <div class="card-top">
+          <strong class="card-title"></strong>
+          <button class="mini-danger" type="button">Remove</button>
+        </div>
+        <label class="field">
+          <span>Activity</span>
+          <input data-key="name" type="text" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>Detail</span>
+          <input data-key="detail" type="text" autocomplete="off" />
+        </label>
+        <div class="raci-assignment-grid"></div>
       </article>
     </template>
 

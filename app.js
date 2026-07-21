@@ -37,18 +37,106 @@ const sampleState = {
   ],
 };
 
+const raciOptions = [
+  ["", "-"],
+  ["R", "R - Responsible"],
+  ["A", "A - Accountable"],
+  ["C", "C - Consulted"],
+  ["I", "I - Informed"],
+];
+
+const sampleRaciState = {
+  title: "Implementation RACI",
+  opportunity: "",
+  roles: [
+    { id: "role_client_sponsor", name: "Client Sponsor" },
+    { id: "role_project_manager", name: "Project Manager" },
+    { id: "role_solution_architect", name: "Solution Architect" },
+    { id: "role_delivery_team", name: "Delivery Team" },
+  ],
+  activities: [
+    {
+      id: "activity_discovery",
+      name: "Discovery workshops",
+      detail: "Confirm scope, stakeholders, goals, and success measures",
+      assignments: {
+        role_client_sponsor: "A",
+        role_project_manager: "R",
+        role_solution_architect: "R",
+        role_delivery_team: "C",
+      },
+    },
+    {
+      id: "activity_solution_design",
+      name: "Solution design",
+      detail: "Define target design, integrations, data, and reporting needs",
+      assignments: {
+        role_client_sponsor: "C",
+        role_project_manager: "A",
+        role_solution_architect: "R",
+        role_delivery_team: "C",
+      },
+    },
+    {
+      id: "activity_build",
+      name: "Build and configuration",
+      detail: "Configure solution components and prepare test-ready release",
+      assignments: {
+        role_client_sponsor: "I",
+        role_project_manager: "A",
+        role_solution_architect: "C",
+        role_delivery_team: "R",
+      },
+    },
+    {
+      id: "activity_uat",
+      name: "UAT and sign-off",
+      detail: "Run acceptance testing, resolve defects, and capture approval",
+      assignments: {
+        role_client_sponsor: "A",
+        role_project_manager: "R",
+        role_solution_architect: "C",
+        role_delivery_team: "R",
+      },
+    },
+    {
+      id: "activity_go_live",
+      name: "Go live",
+      detail: "Coordinate release, cutover, and hypercare transition",
+      assignments: {
+        role_client_sponsor: "A",
+        role_project_manager: "R",
+        role_solution_architect: "R",
+        role_delivery_team: "R",
+      },
+    },
+  ],
+};
+
+let activeTool = localStorage.getItem("delivery-diagram-active-tool") || "plan";
 let state = loadState();
+let raciState = loadRaciState();
 
 const els = {
+  planTab: document.querySelector("#planTab"),
+  raciTab: document.querySelector("#raciTab"),
+  planEditor: document.querySelector("#planEditor"),
+  raciEditor: document.querySelector("#raciEditor"),
   title: document.querySelector("#projectTitle"),
+  raciTitle: document.querySelector("#raciTitle"),
+  raciOpportunity: document.querySelector("#raciOpportunity"),
   previewTitle: document.querySelector("#previewTitle"),
   columns: document.querySelector("#columnCount"),
   startDate: document.querySelector("#startDate"),
   laneEditor: document.querySelector("#laneEditor"),
   milestoneEditor: document.querySelector("#milestoneEditor"),
+  raciRoleEditor: document.querySelector("#raciRoleEditor"),
+  raciActivityEditor: document.querySelector("#raciActivityEditor"),
   diagram: document.querySelector("#diagram"),
   status: document.querySelector("#statusText"),
+  raciStatus: document.querySelector("#raciStatusText"),
   showLegend: document.querySelector("#showLegend"),
+  raciKey: document.querySelector("#raciKey"),
 };
 
 function loadState() {
@@ -62,6 +150,19 @@ function loadState() {
 
 function saveState() {
   localStorage.setItem("plan-lane-builder-state", JSON.stringify(state));
+}
+
+function loadRaciState() {
+  try {
+    const saved = localStorage.getItem("raci-builder-state");
+    return saved ? normalizeRaciState(JSON.parse(saved)) : structuredClone(sampleRaciState);
+  } catch {
+    return structuredClone(sampleRaciState);
+  }
+}
+
+function saveRaciState() {
+  localStorage.setItem("raci-builder-state", JSON.stringify(raciState));
 }
 
 function normalizeState(next) {
@@ -93,6 +194,50 @@ function normalizeMilestone(milestone) {
     color: validColor(milestone.color) ? milestone.color : "#1769f2",
     icon: iconOptions.some(([value]) => value === milestone.icon) ? milestone.icon : "star",
   };
+}
+
+function normalizeRaciState(next) {
+  const roles = Array.isArray(next.roles) ? next.roles.map(normalizeRaciRole) : [];
+  const activities = Array.isArray(next.activities)
+    ? next.activities.map((activity) => normalizeRaciActivity(activity, roles))
+    : [];
+  return {
+    ...structuredClone(sampleRaciState),
+    ...next,
+    title: String(next.title || "RACI Matrix"),
+    opportunity: String(next.opportunity || ""),
+    roles,
+    activities,
+  };
+}
+
+function normalizeRaciRole(role) {
+  return {
+    id: String(role.id || uid("role")),
+    name: String(role.name || "New role"),
+  };
+}
+
+function normalizeRaciActivity(activity, roles) {
+  const assignments = {};
+  roles.forEach((role) => {
+    assignments[role.id] = normalizeRaciValue(activity.assignments?.[role.id]);
+  });
+  return {
+    id: String(activity.id || uid("activity")),
+    name: String(activity.name || "New activity"),
+    detail: String(activity.detail || ""),
+    assignments,
+  };
+}
+
+function normalizeRaciValue(value) {
+  return ["R", "A", "C", "I"].includes(value) ? value : "";
+}
+
+function uid(prefix) {
+  if (window.crypto?.randomUUID) return `${prefix}_${window.crypto.randomUUID()}`;
+  return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
 
 function clamp(value, min, max) {
@@ -146,6 +291,28 @@ function render(options = {}) {
   renderDiagram();
 }
 
+function renderRaci(options = {}) {
+  const { rebuildEditors = true } = options;
+  raciState = normalizeRaciState(raciState);
+  saveRaciState();
+  renderRaciControls();
+  if (rebuildEditors) renderRaciEditors();
+  renderRaciDiagram();
+}
+
+function switchTool(tool) {
+  activeTool = tool === "raci" ? "raci" : "plan";
+  localStorage.setItem("delivery-diagram-active-tool", activeTool);
+  els.planTab.classList.toggle("active", activeTool === "plan");
+  els.raciTab.classList.toggle("active", activeTool === "raci");
+  els.planEditor.classList.toggle("hidden", activeTool !== "plan");
+  els.raciEditor.classList.toggle("hidden", activeTool !== "raci");
+  els.showLegend.closest(".toggle").classList.toggle("hidden", activeTool !== "plan");
+  els.raciKey.classList.toggle("hidden", activeTool !== "raci");
+  if (activeTool === "plan") render();
+  else renderRaci();
+}
+
 function renderControls() {
   els.title.value = state.title;
   els.previewTitle.textContent = state.title;
@@ -158,6 +325,12 @@ function renderControls() {
   document.querySelectorAll(".date-only").forEach((el) => {
     el.style.display = state.mode === "dates" ? "grid" : "none";
   });
+}
+
+function renderRaciControls() {
+  els.raciTitle.value = raciState.title;
+  els.raciOpportunity.value = raciState.opportunity;
+  els.previewTitle.textContent = raciState.title;
 }
 
 function renderEditors() {
@@ -218,6 +391,75 @@ function renderCollectionEditor({ target, templateId, collection, onUpdate, onRe
   });
 }
 
+function renderRaciEditors() {
+  renderRaciRoleEditor();
+  renderRaciActivityEditor();
+}
+
+function renderRaciRoleEditor() {
+  const template = document.querySelector("#raciRoleTemplate");
+  els.raciRoleEditor.replaceChildren();
+  raciState.roles.forEach((role, index) => {
+    const node = template.content.firstElementChild.cloneNode(true);
+    node.querySelector(".card-title").textContent = role.name;
+    node.querySelector(".mini-danger").addEventListener("click", () => {
+      const [removed] = raciState.roles.splice(index, 1);
+      raciState.activities.forEach((activity) => delete activity.assignments[removed.id]);
+      renderRaci();
+    });
+    const input = node.querySelector("input");
+    input.value = role.name;
+    input.addEventListener("input", () => {
+      raciState.roles[index].name = input.value;
+      node.querySelector(".card-title").textContent = input.value || "Untitled";
+      renderRaci({ rebuildEditors: false });
+    });
+    els.raciRoleEditor.append(node);
+  });
+}
+
+function renderRaciActivityEditor() {
+  const template = document.querySelector("#raciActivityTemplate");
+  els.raciActivityEditor.replaceChildren();
+  raciState.activities.forEach((activity, index) => {
+    const node = template.content.firstElementChild.cloneNode(true);
+    node.querySelector(".card-title").textContent = activity.name;
+    node.querySelector(".mini-danger").addEventListener("click", () => {
+      raciState.activities.splice(index, 1);
+      renderRaci();
+    });
+
+    node.querySelectorAll("input").forEach((input) => {
+      const key = input.dataset.key;
+      input.value = activity[key];
+      input.addEventListener("input", () => {
+        raciState.activities[index][key] = input.value;
+        if (key === "name") node.querySelector(".card-title").textContent = input.value || "Untitled";
+        renderRaci({ rebuildEditors: false });
+      });
+    });
+
+    const grid = node.querySelector(".raci-assignment-grid");
+    raciState.roles.forEach((role) => {
+      const label = document.createElement("label");
+      label.className = "field";
+      const text = document.createElement("span");
+      text.textContent = role.name;
+      const select = document.createElement("select");
+      raciOptions.forEach(([value, labelText]) => select.append(new Option(labelText, value)));
+      select.value = activity.assignments[role.id] || "";
+      select.addEventListener("input", () => {
+        raciState.activities[index].assignments[role.id] = select.value;
+        renderRaci({ rebuildEditors: false });
+      });
+      label.append(text, select);
+      grid.append(label);
+    });
+
+    els.raciActivityEditor.append(node);
+  });
+}
+
 function renderDiagram() {
   els.diagram.style.setProperty("--columns", state.columns);
   els.diagram.style.setProperty("--rows", state.lanes.length);
@@ -255,6 +497,52 @@ function renderDiagram() {
   if (state.showLegend && state.milestones.length) {
     els.diagram.append(legend());
   }
+}
+
+function renderRaciDiagram() {
+  const wrapper = document.createElement("div");
+  wrapper.className = "raci-table-wrap";
+  wrapper.innerHTML = `
+    <div class="raci-title-block">
+      <div>
+        <h3>${escapeHtml(raciState.title)}</h3>
+        ${raciState.opportunity ? `<p>${escapeHtml(raciState.opportunity)}</p>` : ""}
+      </div>
+    </div>
+  `;
+  const table = document.createElement("table");
+  table.className = "raci-table";
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  const activityHead = document.createElement("th");
+  activityHead.textContent = "Activity";
+  headRow.append(activityHead);
+  raciState.roles.forEach((role) => {
+    const th = document.createElement("th");
+    th.textContent = role.name;
+    headRow.append(th);
+  });
+  thead.append(headRow);
+  table.append(thead);
+
+  const tbody = document.createElement("tbody");
+  raciState.activities.forEach((activity) => {
+    const row = document.createElement("tr");
+    const activityCell = document.createElement("td");
+    activityCell.className = "raci-activity";
+    activityCell.innerHTML = `<strong>${escapeHtml(activity.name)}</strong>${activity.detail ? `<span>${escapeHtml(activity.detail)}</span>` : ""}`;
+    row.append(activityCell);
+    raciState.roles.forEach((role) => {
+      const td = document.createElement("td");
+      const value = activity.assignments[role.id] || "";
+      td.innerHTML = value ? `<span class="raci-chip ${value.toLowerCase()}">${value}</span>` : '<span class="raci-empty">-</span>';
+      row.append(td);
+    });
+    tbody.append(row);
+  });
+  table.append(tbody);
+  wrapper.append(table);
+  els.diagram.replaceChildren(wrapper);
 }
 
 function gridCell(text, className, row, col) {
@@ -335,10 +623,11 @@ function escapeHtml(value) {
 }
 
 function setStatus(message) {
-  els.status.textContent = message;
+  const target = activeTool === "raci" ? els.raciStatus : els.status;
+  target.textContent = message;
   window.clearTimeout(setStatus.timer);
   setStatus.timer = window.setTimeout(() => {
-    els.status.textContent = "";
+    target.textContent = "";
   }, 2500);
 }
 
@@ -353,8 +642,16 @@ function download(filename, text, type) {
 }
 
 function exportSvg() {
-  download(`${slugify(state.title)}.svg`, buildSvg(), "image/svg+xml");
+  download(`${slugify(activeTitle())}.svg`, buildActiveSvg(), "image/svg+xml");
   setStatus("SVG exported.");
+}
+
+function buildActiveSvg() {
+  return activeTool === "raci" ? buildRaciSvg() : buildSvg();
+}
+
+function activeTitle() {
+  return activeTool === "raci" ? raciState.title : state.title;
 }
 
 function buildSvg() {
@@ -430,8 +727,77 @@ function buildSvg() {
   return parts.join("\n");
 }
 
+function buildRaciSvg() {
+  const activityWidth = 330;
+  const roleWidth = 122;
+  const headerHeight = 62;
+  const rowHeight = 78;
+  const titleHeight = 82;
+  const width = activityWidth + raciState.roles.length * roleWidth + 2;
+  const tableHeight = headerHeight + raciState.activities.length * rowHeight;
+  const height = titleHeight + tableHeight + 44;
+  const parts = [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
+    `<rect width="100%" height="100%" fill="#ffffff"/>`,
+    svgText(raciState.title, 1, 34, 26, "#16181d", 900, "start"),
+  ];
+  if (raciState.opportunity) {
+    parts.push(svgText(raciState.opportunity, 1, 58, 13, "#616977", 800, "start"));
+  }
+
+  const tableTop = titleHeight;
+  parts.push(`<rect x="1" y="${tableTop}" width="${width - 2}" height="${tableHeight}" rx="18" fill="#ffffff" stroke="#d7dce2"/>`);
+  parts.push(`<rect x="1" y="${tableTop}" width="${width - 2}" height="${headerHeight}" rx="18" fill="#fbfcfe"/>`);
+  parts.push(svgText("Activity", 18, tableTop + 38, 12, "#16181d", 900, "start"));
+  raciState.roles.forEach((role, index) => {
+    const x = activityWidth + index * roleWidth;
+    parts.push(svgText(role.name, x + roleWidth / 2, tableTop + 38, 12, "#16181d", 900, "middle"));
+  });
+
+  for (let col = 0; col <= raciState.roles.length; col += 1) {
+    const x = activityWidth + col * roleWidth;
+    parts.push(`<line x1="${x}" y1="${tableTop}" x2="${x}" y2="${tableTop + tableHeight}" stroke="#e4e7eb"/>`);
+  }
+  for (let row = 0; row <= raciState.activities.length; row += 1) {
+    const y = tableTop + headerHeight + row * rowHeight;
+    parts.push(`<line x1="1" y1="${y}" x2="${width - 1}" y2="${y}" stroke="#e4e7eb"/>`);
+  }
+
+  raciState.activities.forEach((activity, rowIndex) => {
+    const top = tableTop + headerHeight + rowIndex * rowHeight;
+    parts.push(...svgWrappedText(activity.name, 18, top + 28, 15, "#16181d", 900, 34));
+    if (activity.detail) {
+      parts.push(...svgWrappedText(activity.detail, 18, top + 54, 12, "#616977", 400, 44));
+    }
+    raciState.roles.forEach((role, colIndex) => {
+      const value = activity.assignments[role.id] || "";
+      const centerX = activityWidth + colIndex * roleWidth + roleWidth / 2;
+      const centerY = top + rowHeight / 2;
+      if (value) {
+        parts.push(`<circle cx="${centerX}" cy="${centerY}" r="18" fill="${raciColor(value)}"/>`);
+        parts.push(svgText(value, centerX, centerY + 6, 16, "#ffffff", 900, "middle"));
+      } else {
+        parts.push(svgText("-", centerX, centerY + 5, 16, "#b4bbc5", 900, "middle"));
+      }
+    });
+  });
+
+  parts.push(svgText("R Responsible   A Accountable   C Consulted   I Informed", 1, height - 10, 12, "#616977", 800, "start"));
+  parts.push("</svg>");
+  return parts.join("\n");
+}
+
+function raciColor(value) {
+  return {
+    R: "#1769f2",
+    A: "#f81663",
+    C: "#12a84f",
+    I: "#ff7900",
+  }[value] || "#b4bbc5";
+}
+
 function exportPng() {
-  const svg = buildSvg();
+  const svg = buildActiveSvg();
   const image = new Image();
   const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
   image.onload = () => {
@@ -451,7 +817,7 @@ function exportPng() {
       const pngUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = pngUrl;
-      link.download = `${slugify(state.title)}.png`;
+      link.download = `${slugify(activeTitle())}.png`;
       link.click();
       URL.revokeObjectURL(pngUrl);
       setStatus("PNG exported.");
@@ -511,6 +877,10 @@ document.querySelectorAll(".segmented button").forEach((button) => {
   });
 });
 
+document.querySelectorAll(".app-tabs button").forEach((button) => {
+  button.addEventListener("click", () => switchTool(button.dataset.tool));
+});
+
 els.title.addEventListener("input", () => {
   state.title = els.title.value;
   render();
@@ -529,6 +899,16 @@ els.startDate.addEventListener("input", () => {
 els.showLegend.addEventListener("input", () => {
   state.showLegend = els.showLegend.checked;
   render();
+});
+
+els.raciTitle.addEventListener("input", () => {
+  raciState.title = els.raciTitle.value;
+  renderRaci({ rebuildEditors: false });
+});
+
+els.raciOpportunity.addEventListener("input", () => {
+  raciState.opportunity = els.raciOpportunity.value;
+  renderRaci({ rebuildEditors: false });
 });
 
 document.querySelector("#addLane").addEventListener("click", () => {
@@ -558,9 +938,37 @@ document.querySelector("#addMilestone").addEventListener("click", () => {
   render();
 });
 
+document.querySelector("#addRaciRole").addEventListener("click", () => {
+  const role = { id: uid("role"), name: "New Role" };
+  raciState.roles.push(role);
+  raciState.activities.forEach((activity) => {
+    activity.assignments[role.id] = "";
+  });
+  renderRaci();
+});
+
+document.querySelector("#addRaciActivity").addEventListener("click", () => {
+  const assignments = {};
+  raciState.roles.forEach((role) => {
+    assignments[role.id] = "";
+  });
+  raciState.activities.push({
+    id: uid("activity"),
+    name: "New Activity",
+    detail: "",
+    assignments,
+  });
+  renderRaci();
+});
+
 document.querySelector("#resetSample").addEventListener("click", () => {
-  state = structuredClone(sampleState);
-  render();
+  if (activeTool === "raci") {
+    raciState = structuredClone(sampleRaciState);
+    renderRaci();
+  } else {
+    state = structuredClone(sampleState);
+    render();
+  }
   setStatus("Sample restored.");
 });
 
@@ -570,6 +978,11 @@ document.querySelector("#exportPng").addEventListener("click", exportPng);
 
 document.querySelector("#copyJson").addEventListener("click", async () => {
   await navigator.clipboard.writeText(JSON.stringify(state, null, 2));
+  setStatus("JSON copied.");
+});
+
+document.querySelector("#copyRaciJson").addEventListener("click", async () => {
+  await navigator.clipboard.writeText(JSON.stringify(raciState, null, 2));
   setStatus("JSON copied.");
 });
 
@@ -587,4 +1000,18 @@ document.querySelector("#importJson").addEventListener("change", async (event) =
   }
 });
 
-render();
+document.querySelector("#importRaciJson").addEventListener("change", async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    raciState = normalizeRaciState(JSON.parse(await file.text()));
+    renderRaci();
+    setStatus("JSON imported.");
+  } catch {
+    setStatus("That JSON could not be imported.");
+  } finally {
+    event.target.value = "";
+  }
+});
+
+switchTool(activeTool);
