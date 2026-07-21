@@ -713,9 +713,10 @@ async function savedRecords(type) {
   }
 }
 
-async function saveRecord(type) {
+async function saveRecord(type, options = {}) {
   const isRaci = type === "raci";
-  const id = isRaci ? activeRaciRecordId || uid("record") : activePlanRecordId || uid("record");
+  const { createVersion = false } = options;
+  const id = createVersion ? uid("record") : isRaci ? activeRaciRecordId || uid("record") : activePlanRecordId || uid("record");
   const data = structuredClone(isRaci ? raciState : state);
   const record = {
     id,
@@ -740,7 +741,7 @@ async function saveRecord(type) {
     localStorage.setItem("active-plan-record-id", id);
   }
   await renderRecordLists();
-  setStatus("Saved.");
+  setStatus(createVersion ? "New version saved." : "Saved.");
 }
 
 async function loadRecord(type) {
@@ -1189,6 +1190,8 @@ document.querySelector("#exportSvg").addEventListener("click", exportSvg);
 document.querySelector("#exportPng").addEventListener("click", exportPng);
 document.querySelector("#savePlanRecord").addEventListener("click", () => saveRecord("plan"));
 document.querySelector("#saveRaciRecord").addEventListener("click", () => saveRecord("raci"));
+document.querySelector("#savePlanVersion").addEventListener("click", () => saveRecord("plan", { createVersion: true }));
+document.querySelector("#saveRaciVersion").addEventListener("click", () => saveRecord("raci", { createVersion: true }));
 document.querySelector("#loadPlanRecord").addEventListener("click", () => loadRecord("plan"));
 document.querySelector("#loadRaciRecord").addEventListener("click", () => loadRecord("raci"));
 document.querySelector("#deletePlanRecord").addEventListener("click", () => deleteRecord("plan"));

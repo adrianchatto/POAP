@@ -314,6 +314,19 @@ button:focus-visible {
   border-top: 1px solid var(--line);
 }
 
+.saved-work-heading h3 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.saved-work-heading p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
 .canvas-shell {
   min-width: 0;
   overflow: hidden;
