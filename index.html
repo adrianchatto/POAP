@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Delivery Diagram Builder</title>
-    <link rel="stylesheet" href="styles.css?v=20260721-raci-plus" />
+    <link rel="stylesheet" href="styles.css?v=20260721-raci-db" />
   </head>
   <body>
     <header class="topbar">
@@ -75,11 +75,23 @@
             <h2>Data</h2>
           </div>
           <div class="button-row">
+            <button class="button ghost" id="savePlanRecord" type="button">Save</button>
+            <button class="button ghost" id="exportPlanJson" type="button">Export JSON</button>
             <button class="button ghost" id="copyJson" type="button">Copy JSON</button>
             <label class="button ghost file-button">
               Import JSON
               <input id="importJson" type="file" accept="application/json" />
             </label>
+          </div>
+          <div class="saved-work">
+            <label class="field">
+              <span>Previous POAPs</span>
+              <select id="planRecordSelect"></select>
+            </label>
+            <div class="button-row">
+              <button class="button ghost" id="loadPlanRecord" type="button">Open</button>
+              <button class="button ghost" id="deletePlanRecord" type="button">Delete</button>
+            </div>
           </div>
           <p class="hint" id="statusText" aria-live="polite"></p>
         </section>
@@ -121,12 +133,24 @@
             <h2>Data</h2>
           </div>
           <div class="button-row">
+            <button class="button ghost" id="saveRaciRecord" type="button">Save</button>
+            <button class="button ghost" id="exportRaciJson" type="button">Export JSON</button>
             <button class="button ghost" id="copyRaciJson" type="button">Copy JSON</button>
             <a class="button ghost" href="raci-example.json" download>Example JSON</a>
             <label class="button ghost file-button">
               Import JSON
               <input id="importRaciJson" type="file" accept="application/json" />
             </label>
+          </div>
+          <div class="saved-work">
+            <label class="field">
+              <span>Previous RACIs</span>
+              <select id="raciRecordSelect"></select>
+            </label>
+            <div class="button-row">
+              <button class="button ghost" id="loadRaciRecord" type="button">Open</button>
+              <button class="button ghost" id="deleteRaciRecord" type="button">Delete</button>
+            </div>
           </div>
           <p class="hint" id="raciStatusText" aria-live="polite"></p>
         </section>
@@ -252,6 +276,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260721-raci-plus"></script>
+    <script src="app.js?v=20260721-raci-db"></script>
   </body>
 </html>

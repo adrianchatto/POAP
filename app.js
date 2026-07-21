@@ -38,12 +38,15 @@ const sampleState = {
 };
 
 const raciOptions = [
-  ["", "-"],
-  ["R", "R - Responsible"],
-  ["A", "A - Accountable"],
-  ["C", "C - Consulted"],
-  ["I", "I - Informed"],
+  ["R", "Responsible"],
+  ["A", "Accountable"],
+  ["C", "Consulted"],
+  ["I", "Informed"],
 ];
+
+const dbName = "delivery-diagram-builder";
+const dbVersion = 1;
+const recordStoreName = "records";
 
 const sampleRaciState = {
   title: "Implementation RACI",
@@ -60,7 +63,7 @@ const sampleRaciState = {
       name: "Discovery workshops",
       detail: "Confirm scope, stakeholders, goals, and success measures",
       assignments: {
-        role_client_sponsor: "A",
+        role_client_sponsor: "RA",
         role_project_manager: "R",
         role_solution_architect: "R",
         role_delivery_team: "C",
@@ -114,6 +117,8 @@ const sampleRaciState = {
 };
 
 let activeTool = localStorage.getItem("delivery-diagram-active-tool") || "plan";
+let activePlanRecordId = localStorage.getItem("active-plan-record-id") || "";
+let activeRaciRecordId = localStorage.getItem("active-raci-record-id") || "";
 let state = loadState();
 let raciState = loadRaciState();
 
@@ -132,6 +137,8 @@ const els = {
   milestoneEditor: document.querySelector("#milestoneEditor"),
   raciRoleEditor: document.querySelector("#raciRoleEditor"),
   raciActivityEditor: document.querySelector("#raciActivityEditor"),
+  planRecordSelect: document.querySelector("#planRecordSelect"),
+  raciRecordSelect: document.querySelector("#raciRecordSelect"),
   diagram: document.querySelector("#diagram"),
   status: document.querySelector("#statusText"),
   raciStatus: document.querySelector("#raciStatusText"),
@@ -232,7 +239,11 @@ function normalizeRaciActivity(activity, roles) {
 }
 
 function normalizeRaciValue(value) {
-  return ["R", "A", "C", "I"].includes(value) ? value : "";
+  const values = Array.isArray(value) ? value : String(value || "").split("");
+  return raciOptions
+    .map(([key]) => key)
+    .filter((key) => values.includes(key))
+    .join("");
 }
 
 function uid(prefix) {
@@ -441,19 +452,35 @@ function renderRaciActivityEditor() {
 
     const grid = node.querySelector(".raci-assignment-grid");
     raciState.roles.forEach((role) => {
-      const label = document.createElement("label");
-      label.className = "field";
-      const text = document.createElement("span");
-      text.textContent = role.name;
-      const select = document.createElement("select");
-      raciOptions.forEach(([value, labelText]) => select.append(new Option(labelText, value)));
-      select.value = activity.assignments[role.id] || "";
-      select.addEventListener("input", () => {
-        raciState.activities[index].assignments[role.id] = select.value;
-        renderRaci({ rebuildEditors: false });
+      const group = document.createElement("fieldset");
+      group.className = "raci-assignment-field";
+      const legend = document.createElement("legend");
+      legend.textContent = role.name;
+      const options = document.createElement("div");
+      options.className = "raci-choice-row";
+      const current = activity.assignments[role.id] || "";
+      raciOptions.forEach(([value, labelText]) => {
+        const label = document.createElement("label");
+        label.className = "raci-choice";
+        label.title = labelText;
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.value = value;
+        checkbox.checked = current.includes(value);
+        const text = document.createElement("span");
+        text.textContent = value;
+        checkbox.addEventListener("input", () => {
+          const nextValue = Array.from(options.querySelectorAll("input:checked"))
+            .map((input) => input.value)
+            .join("");
+          raciState.activities[index].assignments[role.id] = nextValue;
+          renderRaci({ rebuildEditors: false });
+        });
+        label.append(checkbox, text);
+        options.append(label);
       });
-      label.append(text, select);
-      grid.append(label);
+      group.append(legend, options);
+      grid.append(group);
     });
 
     els.raciActivityEditor.append(node);
@@ -535,7 +562,7 @@ function renderRaciDiagram() {
     raciState.roles.forEach((role) => {
       const td = document.createElement("td");
       const value = activity.assignments[role.id] || "";
-      td.innerHTML = value ? `<span class="raci-chip ${value.toLowerCase()}">${value}</span>` : '<span class="raci-empty">-</span>';
+      td.append(raciCellContent(value));
       row.append(td);
     });
     tbody.append(row);
@@ -543,6 +570,25 @@ function renderRaciDiagram() {
   table.append(tbody);
   wrapper.append(table);
   els.diagram.replaceChildren(wrapper);
+}
+
+function raciCellContent(value) {
+  const normalized = normalizeRaciValue(value);
+  if (!normalized) {
+    const empty = document.createElement("span");
+    empty.className = "raci-empty";
+    empty.textContent = "-";
+    return empty;
+  }
+  const group = document.createElement("span");
+  group.className = "raci-chip-group";
+  normalized.split("").forEach((letter) => {
+    const chip = document.createElement("span");
+    chip.className = `raci-chip ${letter.toLowerCase()}`;
+    chip.textContent = letter;
+    group.append(chip);
+  });
+  return group;
 }
 
 function gridCell(text, className, row, col) {
@@ -631,6 +677,154 @@ function setStatus(message) {
   }, 2500);
 }
 
+function openDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(dbName, dbVersion);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(recordStoreName)) {
+        const store = db.createObjectStore(recordStoreName, { keyPath: "id" });
+        store.createIndex("type", "type", { unique: false });
+        store.createIndex("updatedAt", "updatedAt", { unique: false });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function dbRequest(request) {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function savedRecords(type) {
+  const db = await openDb();
+  try {
+    const tx = db.transaction(recordStoreName, "readonly");
+    const records = await dbRequest(tx.objectStore(recordStoreName).getAll());
+    return records
+      .filter((record) => record.type === type)
+      .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+  } finally {
+    db.close();
+  }
+}
+
+async function saveRecord(type) {
+  const isRaci = type === "raci";
+  const id = isRaci ? activeRaciRecordId || uid("record") : activePlanRecordId || uid("record");
+  const data = structuredClone(isRaci ? raciState : state);
+  const record = {
+    id,
+    type,
+    title: (isRaci ? raciState.title : state.title) || (isRaci ? "Untitled RACI" : "Untitled POAP"),
+    opportunity: isRaci ? raciState.opportunity : "",
+    updatedAt: new Date().toISOString(),
+    data,
+  };
+  const db = await openDb();
+  try {
+    const tx = db.transaction(recordStoreName, "readwrite");
+    await dbRequest(tx.objectStore(recordStoreName).put(record));
+  } finally {
+    db.close();
+  }
+  if (isRaci) {
+    activeRaciRecordId = id;
+    localStorage.setItem("active-raci-record-id", id);
+  } else {
+    activePlanRecordId = id;
+    localStorage.setItem("active-plan-record-id", id);
+  }
+  await renderRecordLists();
+  setStatus("Saved.");
+}
+
+async function loadRecord(type) {
+  const select = type === "raci" ? els.raciRecordSelect : els.planRecordSelect;
+  if (!select.value) {
+    setStatus("Choose a saved item first.");
+    return;
+  }
+  const db = await openDb();
+  try {
+    const tx = db.transaction(recordStoreName, "readonly");
+    const record = await dbRequest(tx.objectStore(recordStoreName).get(select.value));
+    if (!record) {
+      setStatus("Saved item was not found.");
+      return;
+    }
+    if (type === "raci") {
+      activeRaciRecordId = record.id;
+      localStorage.setItem("active-raci-record-id", record.id);
+      raciState = normalizeRaciState(record.data);
+      switchTool("raci");
+    } else {
+      activePlanRecordId = record.id;
+      localStorage.setItem("active-plan-record-id", record.id);
+      state = normalizeState(record.data);
+      switchTool("plan");
+    }
+    await renderRecordLists();
+    setStatus("Opened.");
+  } finally {
+    db.close();
+  }
+}
+
+async function deleteRecord(type) {
+  const select = type === "raci" ? els.raciRecordSelect : els.planRecordSelect;
+  if (!select.value) {
+    setStatus("Choose a saved item first.");
+    return;
+  }
+  const db = await openDb();
+  try {
+    const tx = db.transaction(recordStoreName, "readwrite");
+    await dbRequest(tx.objectStore(recordStoreName).delete(select.value));
+  } finally {
+    db.close();
+  }
+  if (type === "raci" && activeRaciRecordId === select.value) {
+    activeRaciRecordId = "";
+    localStorage.removeItem("active-raci-record-id");
+  }
+  if (type === "plan" && activePlanRecordId === select.value) {
+    activePlanRecordId = "";
+    localStorage.removeItem("active-plan-record-id");
+  }
+  await renderRecordLists();
+  setStatus("Deleted.");
+}
+
+async function renderRecordLists() {
+  try {
+    renderRecordSelect(els.planRecordSelect, await savedRecords("plan"), activePlanRecordId, "No saved POAPs");
+    renderRecordSelect(els.raciRecordSelect, await savedRecords("raci"), activeRaciRecordId, "No saved RACIs");
+  } catch {
+    setStatus("Saved work could not be loaded.");
+  }
+}
+
+function renderRecordSelect(select, records, activeId, emptyLabel) {
+  select.replaceChildren();
+  if (!records.length) {
+    select.append(new Option(emptyLabel, ""));
+    select.disabled = true;
+    return;
+  }
+  select.disabled = false;
+  records.forEach((record) => {
+    const updated = new Date(record.updatedAt).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+    const label = `${record.title || "Untitled"} - ${updated}`;
+    select.append(new Option(label, record.id));
+  });
+  select.value = records.some((record) => record.id === activeId) ? activeId : records[0].id;
+}
+
 function download(filename, text, type) {
   const blob = new Blob([text], { type });
   const url = URL.createObjectURL(blob);
@@ -644,6 +838,13 @@ function download(filename, text, type) {
 function exportSvg() {
   download(`${slugify(activeTitle())}.svg`, buildActiveSvg(), "image/svg+xml");
   setStatus("SVG exported.");
+}
+
+function exportJson(type = activeTool) {
+  const data = type === "raci" ? raciState : state;
+  const title = type === "raci" ? raciState.title : state.title;
+  download(`${slugify(title)}.json`, JSON.stringify(data, null, 2), "application/json");
+  setStatus("JSON exported.");
 }
 
 function buildActiveSvg() {
@@ -770,12 +971,19 @@ function buildRaciSvg() {
       parts.push(...svgWrappedText(activity.detail, 18, top + 54, 12, "#616977", 400, 44));
     }
     raciState.roles.forEach((role, colIndex) => {
-      const value = activity.assignments[role.id] || "";
+      const value = normalizeRaciValue(activity.assignments[role.id]);
       const centerX = activityWidth + colIndex * roleWidth + roleWidth / 2;
       const centerY = top + rowHeight / 2;
       if (value) {
-        parts.push(`<circle cx="${centerX}" cy="${centerY}" r="18" fill="${raciColor(value)}"/>`);
-        parts.push(svgText(value, centerX, centerY + 6, 16, "#ffffff", 900, "middle"));
+        const letters = value.split("");
+        const chipGap = 4;
+        const chipSize = 26;
+        const totalWidth = letters.length * chipSize + (letters.length - 1) * chipGap;
+        letters.forEach((letter, letterIndex) => {
+          const chipX = centerX - totalWidth / 2 + chipSize / 2 + letterIndex * (chipSize + chipGap);
+          parts.push(`<circle cx="${chipX}" cy="${centerY}" r="13" fill="${raciColor(letter)}"/>`);
+          parts.push(svgText(letter, chipX, centerY + 5, 13, "#ffffff", 900, "middle"));
+        });
       } else {
         parts.push(svgText("-", centerX, centerY + 5, 16, "#b4bbc5", 900, "middle"));
       }
@@ -963,9 +1171,13 @@ document.querySelector("#addRaciActivity").addEventListener("click", () => {
 
 document.querySelector("#resetSample").addEventListener("click", () => {
   if (activeTool === "raci") {
+    activeRaciRecordId = "";
+    localStorage.removeItem("active-raci-record-id");
     raciState = structuredClone(sampleRaciState);
     renderRaci();
   } else {
+    activePlanRecordId = "";
+    localStorage.removeItem("active-plan-record-id");
     state = structuredClone(sampleState);
     render();
   }
@@ -975,6 +1187,14 @@ document.querySelector("#resetSample").addEventListener("click", () => {
 document.querySelector("#printDiagram").addEventListener("click", () => window.print());
 document.querySelector("#exportSvg").addEventListener("click", exportSvg);
 document.querySelector("#exportPng").addEventListener("click", exportPng);
+document.querySelector("#savePlanRecord").addEventListener("click", () => saveRecord("plan"));
+document.querySelector("#saveRaciRecord").addEventListener("click", () => saveRecord("raci"));
+document.querySelector("#loadPlanRecord").addEventListener("click", () => loadRecord("plan"));
+document.querySelector("#loadRaciRecord").addEventListener("click", () => loadRecord("raci"));
+document.querySelector("#deletePlanRecord").addEventListener("click", () => deleteRecord("plan"));
+document.querySelector("#deleteRaciRecord").addEventListener("click", () => deleteRecord("raci"));
+document.querySelector("#exportPlanJson").addEventListener("click", () => exportJson("plan"));
+document.querySelector("#exportRaciJson").addEventListener("click", () => exportJson("raci"));
 
 document.querySelector("#copyJson").addEventListener("click", async () => {
   await navigator.clipboard.writeText(JSON.stringify(state, null, 2));
@@ -991,6 +1211,8 @@ document.querySelector("#importJson").addEventListener("change", async (event) =
   if (!file) return;
   try {
     state = normalizeState(JSON.parse(await file.text()));
+    activePlanRecordId = "";
+    localStorage.removeItem("active-plan-record-id");
     render();
     setStatus("JSON imported.");
   } catch {
@@ -1005,6 +1227,8 @@ document.querySelector("#importRaciJson").addEventListener("change", async (even
   if (!file) return;
   try {
     raciState = normalizeRaciState(JSON.parse(await file.text()));
+    activeRaciRecordId = "";
+    localStorage.removeItem("active-raci-record-id");
     renderRaci();
     setStatus("JSON imported.");
   } catch {
@@ -1015,3 +1239,4 @@ document.querySelector("#importRaciJson").addEventListener("change", async (even
 });
 
 switchTool(activeTool);
+renderRecordLists();

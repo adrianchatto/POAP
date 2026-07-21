@@ -25,7 +25,7 @@
       "name": "Discovery workshops",
       "detail": "Confirm scope, stakeholders, goals, and success measures",
       "assignments": {
-        "role_client_sponsor": "A",
+        "role_client_sponsor": "RA",
         "role_project_manager": "R",
         "role_solution_architect": "R",
         "role_delivery_team": "C"
