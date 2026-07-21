@@ -1,0 +1,79 @@
+{
+  "title": "Implementation RACI",
+  "opportunity": "Example Opportunity - Contact Centre Transformation",
+  "roles": [
+    {
+      "id": "role_client_sponsor",
+      "name": "Client Sponsor"
+    },
+    {
+      "id": "role_project_manager",
+      "name": "Project Manager"
+    },
+    {
+      "id": "role_solution_architect",
+      "name": "Solution Architect"
+    },
+    {
+      "id": "role_delivery_team",
+      "name": "Delivery Team"
+    }
+  ],
+  "activities": [
+    {
+      "id": "activity_discovery",
+      "name": "Discovery workshops",
+      "detail": "Confirm scope, stakeholders, goals, and success measures",
+      "assignments": {
+        "role_client_sponsor": "A",
+        "role_project_manager": "R",
+        "role_solution_architect": "R",
+        "role_delivery_team": "C"
+      }
+    },
+    {
+      "id": "activity_solution_design",
+      "name": "Solution design",
+      "detail": "Define target design, integrations, data, and reporting needs",
+      "assignments": {
+        "role_client_sponsor": "C",
+        "role_project_manager": "A",
+        "role_solution_architect": "R",
+        "role_delivery_team": "C"
+      }
+    },
+    {
+      "id": "activity_build",
+      "name": "Build and configuration",
+      "detail": "Configure solution components and prepare test-ready release",
+      "assignments": {
+        "role_client_sponsor": "I",
+        "role_project_manager": "A",
+        "role_solution_architect": "C",
+        "role_delivery_team": "R"
+      }
+    },
+    {
+      "id": "activity_uat",
+      "name": "UAT and sign-off",
+      "detail": "Run acceptance testing, resolve defects, and capture approval",
+      "assignments": {
+        "role_client_sponsor": "A",
+        "role_project_manager": "R",
+        "role_solution_architect": "C",
+        "role_delivery_team": "R"
+      }
+    },
+    {
+      "id": "activity_go_live",
+      "name": "Go live",
+      "detail": "Coordinate release, cutover, and hypercare transition",
+      "assignments": {
+        "role_client_sponsor": "A",
+        "role_project_manager": "R",
+        "role_solution_architect": "R",
+        "role_delivery_team": "R"
+      }
+    }
+  ]
+}
