@@ -716,12 +716,16 @@ async function savedRecords(type) {
 async function saveRecord(type, options = {}) {
   const isRaci = type === "raci";
   const { createVersion = false } = options;
-  const id = createVersion ? uid("record") : isRaci ? activeRaciRecordId || uid("record") : activePlanRecordId || uid("record");
+  const activeId = isRaci ? activeRaciRecordId : activePlanRecordId;
+  const title = (isRaci ? raciState.title : state.title) || (isRaci ? "Untitled RACI" : "Untitled POAP");
+  const existingRecord = !createVersion && activeId ? await recordById(activeId) : null;
+  const shouldCreateRecord = createVersion || !existingRecord || existingRecord.title !== title;
+  const id = shouldCreateRecord ? uid("record") : activeId;
   const data = structuredClone(isRaci ? raciState : state);
   const record = {
     id,
     type,
-    title: (isRaci ? raciState.title : state.title) || (isRaci ? "Untitled RACI" : "Untitled POAP"),
+    title,
     opportunity: isRaci ? raciState.opportunity : "",
     updatedAt: new Date().toISOString(),
     data,
@@ -741,7 +745,17 @@ async function saveRecord(type, options = {}) {
     localStorage.setItem("active-plan-record-id", id);
   }
   await renderRecordLists();
-  setStatus(createVersion ? "New version saved." : "Saved.");
+  setStatus(shouldCreateRecord ? "New saved item created." : "Saved.");
+}
+
+async function recordById(id) {
+  const db = await openDb();
+  try {
+    const tx = db.transaction(recordStoreName, "readonly");
+    return await dbRequest(tx.objectStore(recordStoreName).get(id));
+  } finally {
+    db.close();
+  }
 }
 
 async function loadRecord(type) {
