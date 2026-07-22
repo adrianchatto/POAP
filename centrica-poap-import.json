@@ -1,0 +1,325 @@
+{
+  "title": "Centrica Plan",
+  "mode": "weeks",
+  "columns": 8,
+  "startDate": "2026-07-20",
+  "showLegend": true,
+  "lanes": [
+    {
+      "name": "Design",
+      "subtitle": "Access, discovery, schema and campaign design",
+      "workstream": "Workstream 1 - Outbound Voice Campaigns",
+      "start": 1,
+      "duration": 1,
+      "color": "#1769f2",
+      "icon": "pencil"
+    },
+    {
+      "name": "Development and Build",
+      "subtitle": "Amazon Connect and CI Data Lake via IaC",
+      "workstream": "Workstream 1 - Outbound Voice Campaigns",
+      "start": 2,
+      "duration": 1,
+      "color": "#e610c7",
+      "icon": "gear"
+    },
+    {
+      "name": "Configure",
+      "subtitle": "Ingestion, profiles, campaigns, flows and agent workspace",
+      "workstream": "Workstream 1 - Outbound Voice Campaigns",
+      "start": 3,
+      "duration": 2,
+      "color": "#1769f2",
+      "icon": "gear"
+    },
+    {
+      "name": "Deploy and Test",
+      "subtitle": "UAT access, outbound campaigns, monitoring and fixes",
+      "workstream": "Workstream 1 - Outbound Voice Campaigns",
+      "start": 5,
+      "duration": 2,
+      "color": "#12a84f",
+      "icon": "check"
+    },
+    {
+      "name": "Evaluation",
+      "subtitle": "Final design, hypercare, feedback review and sign-off",
+      "workstream": "Workstream 1 - Outbound Voice Campaigns",
+      "start": 7,
+      "duration": 2,
+      "color": "#6631cf",
+      "icon": "flag"
+    },
+    {
+      "name": "Design",
+      "subtitle": "Reporting requirements, dashboard layout, metrics and access",
+      "workstream": "Workstream 2 - Reporting, Analytics and Roadmap",
+      "start": 1,
+      "duration": 1,
+      "color": "#0876f6",
+      "icon": "pencil"
+    },
+    {
+      "name": "Development and Build",
+      "subtitle": "QuickSight data sources and campaign, compliance, agent dashboards",
+      "workstream": "Workstream 2 - Reporting, Analytics and Roadmap",
+      "start": 2,
+      "duration": 2,
+      "color": "#ff7900",
+      "icon": "chart"
+    },
+    {
+      "name": "Review and Iterate",
+      "subtitle": "Dashboard walkthrough, feedback iteration and handover docs",
+      "workstream": "Workstream 2 - Reporting, Analytics and Roadmap",
+      "start": 4,
+      "duration": 1,
+      "color": "#12a84f",
+      "icon": "check"
+    },
+    {
+      "name": "Roadmap",
+      "subtitle": "Additional use cases, wider deployment scope and business case",
+      "workstream": "Workstream 2 - Reporting, Analytics and Roadmap",
+      "start": 5,
+      "duration": 2,
+      "color": "#6631cf",
+      "icon": "flag"
+    }
+  ],
+  "milestones": [
+    {
+      "name": "WS1 Design",
+      "detail": "Approved",
+      "position": 1,
+      "color": "#1769f2",
+      "icon": "pencil"
+    },
+    {
+      "name": "WS1 Build",
+      "detail": "Dev environment ready",
+      "position": 4,
+      "color": "#1769f2",
+      "icon": "gear"
+    },
+    {
+      "name": "WS1 UAT",
+      "detail": "Testing complete",
+      "position": 6,
+      "color": "#12a84f",
+      "icon": "check"
+    },
+    {
+      "name": "WS1 Sign-off",
+      "detail": "Evaluation complete",
+      "position": 8,
+      "color": "#6631cf",
+      "icon": "flag"
+    },
+    {
+      "name": "WS2 Dashboards",
+      "detail": "QuickSight dashboards deployed",
+      "position": 3,
+      "color": "#ff7900",
+      "icon": "chart"
+    },
+    {
+      "name": "WS2 Sign-off",
+      "detail": "Roadmap and business case complete",
+      "position": 6,
+      "color": "#6631cf",
+      "icon": "flag"
+    }
+  ],
+  "workstreams": [
+    {
+      "id": "workstream_1",
+      "name": "Workstream 1 - Outbound Voice Campaigns in Amazon Connect",
+      "items": [
+        {
+          "number": 1,
+          "phase": "Design",
+          "tasks": [
+            "Prerequisites (access)",
+            "Conduct discovery workshop with program manager for RDC",
+            "Identify information needed from flat file ingestion",
+            "Identify data to be uploaded back to CRM",
+            "Agree data schema",
+            "Design Outbound Campaign structure for Voice",
+            "Socialise with stakeholders and get feedback and approval"
+          ],
+          "deliverables": [
+            "High level design"
+          ],
+          "clientResources": [
+            "Project contact",
+            "Centrica RDC SME",
+            "Centrica Amazon Connect SME"
+          ],
+          "estimatedDuration": "1 week"
+        },
+        {
+          "number": 2,
+          "phase": "Development and Build",
+          "tasks": [
+            "Build Amazon Connect instance via CloudInteract IaC modules",
+            "Build CI Data Lake via IaC"
+          ],
+          "deliverables": [
+            "Fully built-out Amazon Connect instance, including CI Data Lake, in customer's dev environment"
+          ],
+          "clientResources": [
+            "Project contact",
+            "Centrica RDC SME",
+            "Centrica Amazon Connect SME"
+          ],
+          "estimatedDuration": "1 week"
+        },
+        {
+          "number": 2,
+          "phase": "Development and Build",
+          "tasks": [
+            "Configure data ingestion pipeline",
+            "Configure Customer Profiles including data mapping",
+            "Build outbound campaigns for Voice",
+            "Build out contact flows in Amazon Connect",
+            "Set up agent workspace and disposition codes"
+          ],
+          "deliverables": [
+            "Fully built-out Voice outbound campaigns solution, in customer's dev environment"
+          ],
+          "clientResources": [
+            "Project contact",
+            "Centrica RDC SME",
+            "Centrica Amazon Connect SME"
+          ],
+          "estimatedDuration": "2 weeks"
+        },
+        {
+          "number": 3,
+          "phase": "Deploy and Test",
+          "tasks": [
+            "Identify UAT users",
+            "Provide UAT users with access to environment",
+            "Enable outbound campaigns",
+            "CI engineering resource on hand for monitoring and bug resolution",
+            "Document feedback throughout test period"
+          ],
+          "deliverables": [
+            "Live environment",
+            "Users active on platform",
+            "Bug fix completed",
+            "UAT feedback document"
+          ],
+          "clientResources": [
+            "Project contact",
+            "Users to conduct UAT"
+          ],
+          "estimatedDuration": "2 weeks"
+        },
+        {
+          "number": 4,
+          "phase": "Evaluation",
+          "tasks": [
+            "Document final design",
+            "Finish Hypercare",
+            "Facilitate feedback review, and acceptance criteria evaluation"
+          ],
+          "deliverables": [
+            "Outbound Voice campaigns live in Amazon Connect",
+            "Final design documents",
+            "Solution evaluated against acceptance criteria",
+            "Workstream sign off"
+          ],
+          "clientResources": [
+            "Project contact",
+            "Centrica RDC SME",
+            "Operations manager"
+          ],
+          "estimatedDuration": "2 weeks"
+        }
+      ]
+    },
+    {
+      "id": "workstream_2",
+      "name": "Workstream 2 - Custom Reporting, Analytics Dashboards and Roadmap",
+      "items": [
+        {
+          "number": 1,
+          "phase": "Design",
+          "tasks": [
+            "Review Pilot success criteria and KPI definitions with Centrica stakeholders",
+            "Agree dashboard layout and metrics with RDC operations and compliance teams",
+            "Define data sources, refresh schedules and access permissions for QuickSight"
+          ],
+          "deliverables": [
+            "Agreed reporting requirements document"
+          ],
+          "clientResources": [
+            "Project contact",
+            "RDC Operations Lead",
+            "Compliance SME"
+          ],
+          "estimatedDuration": "1 week"
+        },
+        {
+          "number": 2,
+          "phase": "Development and Build",
+          "tasks": [
+            "Configure Amazon QuickSight data sources from Amazon Connect Contact Lens and campaign data, held in CI Data Lake",
+            "Build campaign performance dashboard: contacts/hour, RPC rate, connection success rate, abandonment rate vs Ofcom threshold, conversion rate, revenue/collections",
+            "Build compliance dashboard: FCA/Ofgem script adherence, CLI presentation accuracy, GDPR consent tracking, audit log access",
+            "Build agent experience dashboard: idle time, call handling time, outcome capture accuracy",
+            "Configure role-based access for Centrica stakeholders"
+          ],
+          "deliverables": [
+            "QuickSight dashboards deployed to dev environment",
+            "All agreed KPIs tracked and available in dashboard"
+          ],
+          "clientResources": [
+            "Project contact",
+            "Centrica Amazon Connect SME"
+          ],
+          "estimatedDuration": "2 weeks"
+        },
+        {
+          "number": 3,
+          "phase": "Review and Iterate",
+          "tasks": [
+            "Walk through dashboards with Centrica stakeholders and capture feedback",
+            "Iterate on dashboard design based on feedback",
+            "Provide handover documentation and end-user guidance"
+          ],
+          "deliverables": [
+            "Final QuickSight dashboards definitions",
+            "Handover documentation complete",
+            "Workstream sign-off"
+          ],
+          "clientResources": [
+            "Project contact",
+            "Operations Manager"
+          ],
+          "estimatedDuration": "1 week"
+        },
+        {
+          "number": 4,
+          "phase": "Roadmap",
+          "tasks": [
+            "Review additional Use Cases across the business areas",
+            "Validate the scope and business potential for wider deployment",
+            "Draft a roadmap with associated business case"
+          ],
+          "deliverables": [
+            "Futures roadmap of the validated solution",
+            "Business Case"
+          ],
+          "clientResources": [
+            "Project contact",
+            "Operations Manager"
+          ],
+          "estimatedDuration": "2 weeks"
+        }
+      ]
+    }
+  ]
+}

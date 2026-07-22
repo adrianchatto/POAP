@@ -200,11 +200,24 @@ function normalizeLane(lane) {
   return {
     name: String(lane.name || "New phase"),
     subtitle: String(lane.subtitle || ""),
+    workstream: String(lane.workstream || ""),
     start: clamp(Number(lane.start) || 1, 1, 52),
     duration: clamp(Number(lane.duration) || 1, 1, 52),
     color: validColor(lane.color) ? lane.color : "#1769f2",
     icon: iconOptions.some(([value]) => value === lane.icon) ? lane.icon : "dot",
   };
+}
+
+function laneWorkstream(lane) {
+  if (lane.workstream) return lane.workstream;
+  const match = String(lane.name || "").match(/^(WS\d+)/i);
+  return match ? match[1].toUpperCase() : "";
+}
+
+function workstreamLabel(value) {
+  if (!value) return "";
+  const match = String(value).match(/workstream\s*(\d+)/i) || String(value).match(/^WS(\d+)/i);
+  return match ? `Workstream ${match[1]}` : String(value);
 }
 
 function normalizeMilestone(milestone) {
@@ -578,9 +591,12 @@ function renderDiagram() {
 
   state.lanes.forEach((lane, rowIndex) => {
     const row = rowIndex + 2;
-    chart.append(phaseCell(lane, row));
+    const currentWorkstream = laneWorkstream(lane);
+    const previousWorkstream = rowIndex > 0 ? laneWorkstream(state.lanes[rowIndex - 1]) : currentWorkstream;
+    const startsWorkstream = rowIndex > 0 && currentWorkstream && currentWorkstream !== previousWorkstream;
+    chart.append(phaseCell(lane, row, startsWorkstream));
     for (let col = 1; col <= state.columns; col += 1) {
-      chart.append(gridCell("", "cell", row, col + 1));
+      chart.append(gridCell("", `cell${startsWorkstream ? " workstream-start" : ""}`, row, col + 1));
     }
     chart.append(bar(lane, rowIndex));
   });
@@ -695,11 +711,13 @@ function gridCell(text, className, row, col) {
   return cell;
 }
 
-function phaseCell(lane, row) {
-  const cell = gridCell("", "cell phase-cell", row, 1);
+function phaseCell(lane, row, startsWorkstream = false) {
+  const workstream = workstreamLabel(laneWorkstream(lane));
+  const cell = gridCell("", `cell phase-cell${startsWorkstream ? " workstream-start" : ""}`, row, 1);
   cell.innerHTML = `
     <div class="phase-icon" style="background:${lane.color}">${escapeHtml(getIcon(lane.icon))}</div>
     <div>
+      ${workstream ? `<p class="workstream-badge">${escapeHtml(workstream)}</p>` : ""}
       <p class="phase-name">${escapeHtml(lane.name)}</p>
       <p class="phase-subtitle" style="color:${lane.color}">${escapeHtml(lane.subtitle)}</p>
       <p class="phase-duration">${escapeHtml(formatDuration(lane.duration))}</p>
@@ -1020,7 +1038,7 @@ function buildSvg() {
   const phaseWidth = 420;
   const cellWidth = 88;
   const headerHeight = 58;
-  const rowHeight = 92;
+  const rowHeight = 104;
   const chartWidth = phaseWidth + state.columns * cellWidth;
   const chartHeight = headerHeight + state.lanes.length * rowHeight;
   const legendHeight = state.showLegend && state.milestones.length ? 180 : 0;
@@ -1049,14 +1067,30 @@ function buildSvg() {
   state.lanes.forEach((lane, index) => {
     const top = headerHeight + index * rowHeight;
     const centerY = top + rowHeight / 2;
+    const currentWorkstream = laneWorkstream(lane);
+    const previousWorkstream = index > 0 ? laneWorkstream(state.lanes[index - 1]) : currentWorkstream;
+    const startsWorkstream = index > 0 && currentWorkstream && currentWorkstream !== previousWorkstream;
+    const workstream = workstreamLabel(currentWorkstream);
+    if (startsWorkstream) {
+      parts.push(`<line x1="1" y1="${top}" x2="${chartWidth + 1}" y2="${top}" stroke="#9aa4b2" stroke-width="3"/>`);
+    }
     parts.push(`<circle cx="37" cy="${centerY}" r="20" fill="${lane.color}"/>`);
     parts.push(svgText(getIcon(lane.icon), 37, centerY + 7, 20, "#ffffff", 900, "middle"));
-    parts.push(...svgWrappedText(lane.name, 82, top + 28, 14, "#16181d", 900, 34));
-    parts.push(...svgWrappedText(lane.subtitle, 82, top + 52, 11, lane.color, 900, 48));
-    parts.push(svgText(formatDuration(lane.duration), 82, top + 82, 11, "#16181d", 400, "start"));
+    if (workstream) {
+      const badgeWidth = Math.min(150, Math.max(86, workstream.length * 7 + 20));
+      parts.push(`<rect x="82" y="${top + 12}" width="${badgeWidth}" height="18" rx="9" fill="#eef4ff"/>`);
+      parts.push(svgText(workstream.toUpperCase(), 92, top + 25, 9, "#1769f2", 900, "start"));
+      parts.push(...svgWrappedText(lane.name, 82, top + 48, 13, "#16181d", 900, 34));
+      parts.push(...svgWrappedText(lane.subtitle, 82, top + 70, 10, lane.color, 900, 48));
+      parts.push(svgText(formatDuration(lane.duration), 82, top + 96, 10, "#16181d", 400, "start"));
+    } else {
+      parts.push(...svgWrappedText(lane.name, 82, top + 34, 14, "#16181d", 900, 34));
+      parts.push(...svgWrappedText(lane.subtitle, 82, top + 58, 11, lane.color, 900, 48));
+      parts.push(svgText(formatDuration(lane.duration), 82, top + 88, 11, "#16181d", 400, "start"));
+    }
 
     const barX = phaseWidth + (lane.start - 1) * cellWidth + 5;
-    const barY = top + 18;
+    const barY = top + 24;
     const barWidth = lane.duration * cellWidth - 10;
     parts.push(`<rect x="${barX}" y="${barY}" width="${barWidth}" height="36" rx="9" fill="${lane.color}"/>`);
     parts.push(svgText(formatDuration(lane.duration), barX + barWidth / 2, barY + 23, 12, "#ffffff", 900, "middle"));

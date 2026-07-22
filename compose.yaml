@@ -13,4 +13,5 @@ services:
       curl -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/app.js -o /usr/share/nginx/html/app.js;
       curl -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/implementation-plan.json -o /usr/share/nginx/html/implementation-plan.json;
       curl -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/raci-example.json -o /usr/share/nginx/html/raci-example.json;
+      curl -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/centrica-poap-import.json -o /usr/share/nginx/html/centrica-poap-import.json;
       exec nginx -g 'daemon off;'"

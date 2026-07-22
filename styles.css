@@ -12,7 +12,7 @@
   --phase-width: 420px;
   --cell-width: 88px;
   --header-height: 58px;
-  --row-height: 92px;
+  --row-height: 104px;
 }
 
 * {
@@ -474,6 +474,10 @@ button:focus-visible {
   border-bottom: 1px solid var(--line);
 }
 
+.cell.workstream-start {
+  border-top: 3px solid #9aa4b2;
+}
+
 .cell.header {
   display: flex;
   align-items: center;
@@ -523,23 +527,38 @@ button:focus-visible {
   margin: 0;
   display: -webkit-box;
   overflow: hidden;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
   line-height: 1.08;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
+.workstream-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin: 0 0 5px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
 .phase-subtitle {
   margin: 5px 0 2px;
   display: -webkit-box;
   overflow: hidden;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   line-height: 1.12;
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
 }
 
 .phase-duration {
