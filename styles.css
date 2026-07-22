@@ -98,6 +98,7 @@ select {
 
 .button,
 .icon-button,
+.mini-button,
 .mini-danger {
   border: 1px solid transparent;
   cursor: pointer;
@@ -135,7 +136,7 @@ select {
 
 .workspace {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(320px, var(--editor-width, 390px)) minmax(0, 1fr);
   gap: 18px;
   padding: 18px;
 }
@@ -144,9 +145,9 @@ select {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  width: 390px;
+  width: var(--editor-width, 390px);
   min-width: 320px;
-  max-width: min(720px, 48vw);
+  max-width: min(760px, 52vw);
   max-height: calc(100vh - 102px);
   overflow: auto;
   resize: horizontal;
@@ -293,6 +294,29 @@ button:focus-visible {
   font-weight: 800;
 }
 
+.mini-button {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: #ffffff;
+  border-color: var(--line-strong);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mini-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.move-controls,
+.record-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .file-button {
   position: relative;
   overflow: hidden;
@@ -329,6 +353,50 @@ button:focus-visible {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.3;
+}
+
+.record-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.record-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+}
+
+.record-item.active {
+  border-color: #b8cffb;
+  background: #eef4ff;
+}
+
+.record-item strong,
+.record-item span {
+  display: block;
+}
+
+.record-item strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.record-item span,
+.empty-records {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.empty-records {
+  margin: 12px 0 0;
 }
 
 .canvas-shell {

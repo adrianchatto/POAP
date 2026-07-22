@@ -129,10 +129,12 @@ const sampleRaciState = {
 let activeTool = localStorage.getItem("delivery-diagram-active-tool") || "plan";
 let activePlanRecordId = localStorage.getItem("active-plan-record-id") || "";
 let activeRaciRecordId = localStorage.getItem("active-raci-record-id") || "";
+let editorWidth = clamp(Number(localStorage.getItem("delivery-diagram-editor-width")) || 390, 320, 760);
 let state = loadState();
 let raciState = loadRaciState();
 
 const els = {
+  workspace: document.querySelector(".workspace"),
   planTab: document.querySelector("#planTab"),
   raciTab: document.querySelector("#raciTab"),
   planEditor: document.querySelector("#planEditor"),
@@ -149,6 +151,8 @@ const els = {
   raciActivityEditor: document.querySelector("#raciActivityEditor"),
   planRecordSelect: document.querySelector("#planRecordSelect"),
   raciRecordSelect: document.querySelector("#raciRecordSelect"),
+  planRecordList: document.querySelector("#planRecordList"),
+  raciRecordList: document.querySelector("#raciRecordList"),
   diagram: document.querySelector("#diagram"),
   status: document.querySelector("#statusText"),
   raciStatus: document.querySelector("#raciStatusText"),
@@ -340,6 +344,16 @@ function switchTool(tool) {
   else renderRaci();
 }
 
+function applyEditorWidth() {
+  els.workspace.style.setProperty("--editor-width", `${editorWidth}px`);
+  localStorage.setItem("delivery-diagram-editor-width", String(editorWidth));
+}
+
+function resizeEditor(delta) {
+  editorWidth = clamp(editorWidth + delta, 320, 760);
+  applyEditorWidth();
+}
+
 function renderControls() {
   els.title.value = state.title;
   els.previewTitle.textContent = state.title;
@@ -373,6 +387,10 @@ function renderEditors() {
       state.lanes.splice(index, 1);
       render();
     },
+    onMove: (index, direction) => {
+      moveItem(state.lanes, index, direction);
+      render();
+    },
   });
 
   renderCollectionEditor({
@@ -387,15 +405,20 @@ function renderEditors() {
       state.milestones.splice(index, 1);
       render();
     },
+    onMove: (index, direction) => {
+      moveItem(state.milestones, index, direction);
+      render();
+    },
   });
 }
 
-function renderCollectionEditor({ target, templateId, collection, onUpdate, onRemove }) {
+function renderCollectionEditor({ target, templateId, collection, onUpdate, onRemove, onMove }) {
   const template = document.querySelector(`#${templateId}`);
   target.replaceChildren();
   collection.forEach((item, index) => {
     const node = template.content.firstElementChild.cloneNode(true);
     node.querySelector(".card-title").textContent = item.name;
+    addMoveControls(node.querySelector(".card-top"), index, collection.length, onMove);
     node.querySelector(".mini-danger").addEventListener("click", () => onRemove(index));
 
     node.querySelectorAll("input, select").forEach((input) => {
@@ -418,6 +441,33 @@ function renderCollectionEditor({ target, templateId, collection, onUpdate, onRe
   });
 }
 
+function addMoveControls(target, index, length, onMove) {
+  if (!onMove) return;
+  const controls = document.createElement("div");
+  controls.className = "move-controls";
+  const up = document.createElement("button");
+  up.type = "button";
+  up.className = "mini-button";
+  up.textContent = "Up";
+  up.disabled = index === 0;
+  up.addEventListener("click", () => onMove(index, -1));
+  const down = document.createElement("button");
+  down.type = "button";
+  down.className = "mini-button";
+  down.textContent = "Down";
+  down.disabled = index === length - 1;
+  down.addEventListener("click", () => onMove(index, 1));
+  controls.append(up, down);
+  target.insertBefore(controls, target.querySelector(".mini-danger"));
+}
+
+function moveItem(collection, index, direction) {
+  const nextIndex = index + direction;
+  if (nextIndex < 0 || nextIndex >= collection.length) return;
+  const [item] = collection.splice(index, 1);
+  collection.splice(nextIndex, 0, item);
+}
+
 function renderRaciEditors() {
   renderRaciRoleEditor();
   renderRaciActivityEditor();
@@ -429,6 +479,10 @@ function renderRaciRoleEditor() {
   raciState.roles.forEach((role, index) => {
     const node = template.content.firstElementChild.cloneNode(true);
     node.querySelector(".card-title").textContent = role.name;
+    addMoveControls(node.querySelector(".card-top"), index, raciState.roles.length, (currentIndex, direction) => {
+      moveItem(raciState.roles, currentIndex, direction);
+      renderRaci();
+    });
     node.querySelector(".mini-danger").addEventListener("click", () => {
       const [removed] = raciState.roles.splice(index, 1);
       raciState.activities.forEach((activity) => delete activity.assignments[removed.id]);
@@ -451,6 +505,10 @@ function renderRaciActivityEditor() {
   raciState.activities.forEach((activity, index) => {
     const node = template.content.firstElementChild.cloneNode(true);
     node.querySelector(".card-title").textContent = activity.name;
+    addMoveControls(node.querySelector(".card-top"), index, raciState.activities.length, (currentIndex, direction) => {
+      moveItem(raciState.activities, currentIndex, direction);
+      renderRaci();
+    });
     node.querySelector(".mini-danger").addEventListener("click", () => {
       raciState.activities.splice(index, 1);
       renderRaci();
@@ -797,7 +855,10 @@ async function recordById(id) {
 
 async function loadRecord(type) {
   const select = type === "raci" ? els.raciRecordSelect : els.planRecordSelect;
-  const recordId = select.value;
+  return loadRecordById(type, select.value);
+}
+
+async function loadRecordById(type, recordId) {
   if (!recordId) {
     setStatus("Choose a saved item first.");
     return;
@@ -833,22 +894,26 @@ async function loadRecord(type) {
 
 async function deleteRecord(type) {
   const select = type === "raci" ? els.raciRecordSelect : els.planRecordSelect;
-  if (!select.value) {
+  return deleteRecordById(type, select.value);
+}
+
+async function deleteRecordById(type, recordId) {
+  if (!recordId) {
     setStatus("Choose a saved item first.");
     return;
   }
   const db = await openDb();
   try {
     const tx = db.transaction(recordStoreName, "readwrite");
-    await dbRequest(tx.objectStore(recordStoreName).delete(select.value));
+    await dbRequest(tx.objectStore(recordStoreName).delete(recordId));
   } finally {
     db.close();
   }
-  if (type === "raci" && activeRaciRecordId === select.value) {
+  if (type === "raci" && activeRaciRecordId === recordId) {
     activeRaciRecordId = "";
     localStorage.removeItem("active-raci-record-id");
   }
-  if (type === "plan" && activePlanRecordId === select.value) {
+  if (type === "plan" && activePlanRecordId === recordId) {
     activePlanRecordId = "";
     localStorage.removeItem("active-plan-record-id");
   }
@@ -858,8 +923,12 @@ async function deleteRecord(type) {
 
 async function renderRecordLists() {
   try {
-    renderRecordSelect(els.planRecordSelect, await savedRecords("plan"), activePlanRecordId, "No saved POAPs");
-    renderRecordSelect(els.raciRecordSelect, await savedRecords("raci"), activeRaciRecordId, "No saved RACIs");
+    const planRecords = await savedRecords("plan");
+    const raciRecords = await savedRecords("raci");
+    renderRecordSelect(els.planRecordSelect, planRecords, activePlanRecordId, "No saved POAPs");
+    renderRecordSelect(els.raciRecordSelect, raciRecords, activeRaciRecordId, "No saved RACIs");
+    renderRecordList(els.planRecordList, planRecords, activePlanRecordId, "plan", "No saved POAPs yet.");
+    renderRecordList(els.raciRecordList, raciRecords, activeRaciRecordId, "raci", "No saved RACIs yet.");
   } catch {
     setStatus("Saved work could not be loaded.");
   }
@@ -879,6 +948,42 @@ function renderRecordSelect(select, records, activeId, emptyLabel) {
     select.append(new Option(label, record.id));
   });
   select.value = records.some((record) => record.id === activeId) ? activeId : records[0].id;
+}
+
+function renderRecordList(target, records, activeId, type, emptyLabel) {
+  target.replaceChildren();
+  if (!records.length) {
+    const empty = document.createElement("p");
+    empty.className = "empty-records";
+    empty.textContent = emptyLabel;
+    target.append(empty);
+    return;
+  }
+  records.forEach((record) => {
+    const item = document.createElement("article");
+    item.className = `record-item${record.id === activeId ? " active" : ""}`;
+    const meta = document.createElement("div");
+    const title = document.createElement("strong");
+    title.textContent = record.title || "Untitled";
+    const updated = document.createElement("span");
+    updated.textContent = record.updatedAt ? new Date(record.updatedAt).toLocaleString() : "Saved item";
+    meta.append(title, updated);
+    const actions = document.createElement("div");
+    actions.className = "record-actions";
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "mini-button";
+    open.textContent = "Open";
+    open.addEventListener("click", () => loadRecordById(type, record.id));
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "mini-danger";
+    remove.textContent = "Delete";
+    remove.addEventListener("click", () => deleteRecordById(type, record.id));
+    actions.append(open, remove);
+    item.append(meta, actions);
+    target.append(item);
+  });
 }
 
 function download(filename, text, type) {
@@ -1249,6 +1354,8 @@ document.querySelector("#resetSample").addEventListener("click", () => {
 document.querySelector("#printDiagram").addEventListener("click", () => window.print());
 document.querySelector("#exportSvg").addEventListener("click", exportSvg);
 document.querySelector("#exportPng").addEventListener("click", exportPng);
+document.querySelector("#narrowEditor").addEventListener("click", () => resizeEditor(-90));
+document.querySelector("#wideEditor").addEventListener("click", () => resizeEditor(90));
 document.querySelector("#savePlanRecord").addEventListener("click", () => saveRecord("plan"));
 document.querySelector("#saveRaciRecord").addEventListener("click", () => saveRecord("raci"));
 document.querySelector("#savePlanVersion").addEventListener("click", () => saveRecord("plan", { createVersion: true }));
@@ -1302,5 +1409,6 @@ document.querySelector("#importRaciJson").addEventListener("change", async (even
   }
 });
 
+applyEditorWidth();
 switchTool(activeTool);
 renderRecordLists();

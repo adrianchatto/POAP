@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Delivery Diagram Builder</title>
-    <link rel="stylesheet" href="styles.css?v=20260722-open-dates" />
+    <link rel="stylesheet" href="styles.css?v=20260722-library-controls" />
   </head>
   <body>
     <header class="topbar">
@@ -17,6 +17,8 @@
         </nav>
       </div>
       <div class="topbar-actions">
+        <button class="button ghost" id="narrowEditor" type="button">Editor -</button>
+        <button class="button ghost" id="wideEditor" type="button">Editor +</button>
         <button class="button ghost" id="resetSample" type="button">Sample</button>
         <button class="button ghost" id="printDiagram" type="button">Print</button>
         <button class="button ghost" id="exportPng" type="button">Export PNG</button>
@@ -97,6 +99,7 @@
               <button class="button ghost" id="loadPlanRecord" type="button">Open</button>
               <button class="button ghost" id="deletePlanRecord" type="button">Delete</button>
             </div>
+            <div class="record-list" id="planRecordList"></div>
           </div>
           <p class="hint" id="statusText" aria-live="polite"></p>
         </section>
@@ -161,6 +164,7 @@
               <button class="button ghost" id="loadRaciRecord" type="button">Open</button>
               <button class="button ghost" id="deleteRaciRecord" type="button">Delete</button>
             </div>
+            <div class="record-list" id="raciRecordList"></div>
           </div>
           <p class="hint" id="raciStatusText" aria-live="polite"></p>
         </section>
@@ -296,6 +300,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260722-open-dates"></script>
+    <script src="app.js?v=20260722-library-controls"></script>
   </body>
 </html>
