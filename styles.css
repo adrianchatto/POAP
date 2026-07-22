@@ -9,10 +9,10 @@
   --accent-dark: #0f55cf;
   --radius: 8px;
   --shadow: 0 18px 45px rgba(24, 30, 42, 0.08);
-  --phase-width: 300px;
+  --phase-width: 420px;
   --cell-width: 88px;
   --header-height: 58px;
-  --row-height: 72px;
+  --row-height: 92px;
 }
 
 * {
@@ -494,10 +494,10 @@ button:focus-visible {
 
 .phase-cell {
   display: grid;
-  grid-template-columns: 50px 1fr;
+  grid-template-columns: 54px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 10px 18px;
   min-width: 0;
 }
 
@@ -521,20 +521,30 @@ button:focus-visible {
 
 .phase-name {
   margin: 0;
-  font-size: 15px;
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 14px;
   font-weight: 900;
-  line-height: 1.12;
+  line-height: 1.08;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .phase-subtitle {
-  margin: 4px 0 1px;
-  font-size: 12px;
+  margin: 5px 0 2px;
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 11px;
   font-weight: 900;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .phase-duration {
   margin: 0;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .bar {

@@ -1017,10 +1017,10 @@ function activeTitle() {
 }
 
 function buildSvg() {
-  const phaseWidth = 300;
+  const phaseWidth = 420;
   const cellWidth = 88;
   const headerHeight = 58;
-  const rowHeight = 72;
+  const rowHeight = 92;
   const chartWidth = phaseWidth + state.columns * cellWidth;
   const chartHeight = headerHeight + state.lanes.length * rowHeight;
   const legendHeight = state.showLegend && state.milestones.length ? 180 : 0;
@@ -1051,9 +1051,9 @@ function buildSvg() {
     const centerY = top + rowHeight / 2;
     parts.push(`<circle cx="37" cy="${centerY}" r="20" fill="${lane.color}"/>`);
     parts.push(svgText(getIcon(lane.icon), 37, centerY + 7, 20, "#ffffff", 900, "middle"));
-    parts.push(...svgWrappedText(lane.name, 74, top + 28, 15, "#16181d", 900, 24));
-    parts.push(svgText(lane.subtitle, 74, top + 52, 12, lane.color, 900, "start"));
-    parts.push(svgText(formatDuration(lane.duration), 74, top + 67, 12, "#16181d", 400, "start"));
+    parts.push(...svgWrappedText(lane.name, 82, top + 28, 14, "#16181d", 900, 34));
+    parts.push(...svgWrappedText(lane.subtitle, 82, top + 52, 11, lane.color, 900, 48));
+    parts.push(svgText(formatDuration(lane.duration), 82, top + 82, 11, "#16181d", 400, "start"));
 
     const barX = phaseWidth + (lane.start - 1) * cellWidth + 5;
     const barY = top + 18;
