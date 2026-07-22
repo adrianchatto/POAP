@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Delivery Diagram Builder</title>
-    <link rel="stylesheet" href="styles.css?v=20260721-save-title" />
+    <link rel="stylesheet" href="styles.css?v=20260722-open-dates" />
   </head>
   <body>
     <header class="topbar">
@@ -282,10 +282,20 @@
           <span>Detail</span>
           <input data-key="detail" type="text" autocomplete="off" />
         </label>
+        <div class="field-grid">
+          <label class="field">
+            <span>Start date</span>
+            <input data-key="startDate" type="date" />
+          </label>
+          <label class="field">
+            <span>End date</span>
+            <input data-key="endDate" type="date" />
+          </label>
+        </div>
         <div class="raci-assignment-grid"></div>
       </article>
     </template>
 
-    <script src="app.js?v=20260721-save-title"></script>
+    <script src="app.js?v=20260722-open-dates"></script>
   </body>
 </html>

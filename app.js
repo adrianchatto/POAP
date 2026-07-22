@@ -62,6 +62,8 @@ const sampleRaciState = {
       id: "activity_discovery",
       name: "Discovery workshops",
       detail: "Confirm scope, stakeholders, goals, and success measures",
+      startDate: "2026-07-20",
+      endDate: "2026-07-24",
       assignments: {
         role_client_sponsor: "RA",
         role_project_manager: "R",
@@ -73,6 +75,8 @@ const sampleRaciState = {
       id: "activity_solution_design",
       name: "Solution design",
       detail: "Define target design, integrations, data, and reporting needs",
+      startDate: "2026-07-27",
+      endDate: "2026-08-07",
       assignments: {
         role_client_sponsor: "C",
         role_project_manager: "A",
@@ -84,6 +88,8 @@ const sampleRaciState = {
       id: "activity_build",
       name: "Build and configuration",
       detail: "Configure solution components and prepare test-ready release",
+      startDate: "2026-08-10",
+      endDate: "2026-08-21",
       assignments: {
         role_client_sponsor: "I",
         role_project_manager: "A",
@@ -95,6 +101,8 @@ const sampleRaciState = {
       id: "activity_uat",
       name: "UAT and sign-off",
       detail: "Run acceptance testing, resolve defects, and capture approval",
+      startDate: "2026-08-24",
+      endDate: "2026-09-04",
       assignments: {
         role_client_sponsor: "A",
         role_project_manager: "R",
@@ -106,6 +114,8 @@ const sampleRaciState = {
       id: "activity_go_live",
       name: "Go live",
       detail: "Coordinate release, cutover, and hypercare transition",
+      startDate: "2026-09-07",
+      endDate: "2026-09-11",
       assignments: {
         role_client_sponsor: "A",
         role_project_manager: "R",
@@ -234,8 +244,14 @@ function normalizeRaciActivity(activity, roles) {
     id: String(activity.id || uid("activity")),
     name: String(activity.name || "New activity"),
     detail: String(activity.detail || ""),
+    startDate: normalizeDateValue(activity.startDate),
+    endDate: normalizeDateValue(activity.endDate),
     assignments,
   };
+}
+
+function normalizeDateValue(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || "")) ? String(value) : "";
 }
 
 function normalizeRaciValue(value) {
@@ -544,6 +560,9 @@ function renderRaciDiagram() {
   const activityHead = document.createElement("th");
   activityHead.textContent = "Activity";
   headRow.append(activityHead);
+  const dateHead = document.createElement("th");
+  dateHead.textContent = "Date range";
+  headRow.append(dateHead);
   raciState.roles.forEach((role) => {
     const th = document.createElement("th");
     th.textContent = role.name;
@@ -559,6 +578,10 @@ function renderRaciDiagram() {
     activityCell.className = "raci-activity";
     activityCell.innerHTML = `<strong>${escapeHtml(activity.name)}</strong>${activity.detail ? `<span>${escapeHtml(activity.detail)}</span>` : ""}`;
     row.append(activityCell);
+    const dateCell = document.createElement("td");
+    dateCell.className = "raci-date-range";
+    dateCell.textContent = formatRaciDateRange(activity);
+    row.append(dateCell);
     raciState.roles.forEach((role) => {
       const td = document.createElement("td");
       const value = activity.assignments[role.id] || "";
@@ -570,6 +593,20 @@ function renderRaciDiagram() {
   table.append(tbody);
   wrapper.append(table);
   els.diagram.replaceChildren(wrapper);
+}
+
+function formatRaciDateRange(activity) {
+  const start = formatDateLabel(activity.startDate);
+  const end = formatDateLabel(activity.endDate);
+  if (start && end) return `${start} - ${end}`;
+  return start || end || "-";
+}
+
+function formatDateLabel(value) {
+  if (!value) return "";
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function raciCellContent(value) {
@@ -760,31 +797,35 @@ async function recordById(id) {
 
 async function loadRecord(type) {
   const select = type === "raci" ? els.raciRecordSelect : els.planRecordSelect;
-  if (!select.value) {
+  const recordId = select.value;
+  if (!recordId) {
     setStatus("Choose a saved item first.");
     return;
   }
   const db = await openDb();
   try {
     const tx = db.transaction(recordStoreName, "readonly");
-    const record = await dbRequest(tx.objectStore(recordStoreName).get(select.value));
+    const record = await dbRequest(tx.objectStore(recordStoreName).get(recordId));
     if (!record) {
       setStatus("Saved item was not found.");
       return;
     }
+    const recordData = record.data || record.payload || record;
     if (type === "raci") {
       activeRaciRecordId = record.id;
       localStorage.setItem("active-raci-record-id", record.id);
-      raciState = normalizeRaciState(record.data);
+      raciState = normalizeRaciState(recordData);
       switchTool("raci");
+      els.raciRecordSelect.value = record.id;
     } else {
       activePlanRecordId = record.id;
       localStorage.setItem("active-plan-record-id", record.id);
-      state = normalizeState(record.data);
+      state = normalizeState(recordData);
       switchTool("plan");
+      els.planRecordSelect.value = record.id;
     }
     await renderRecordLists();
-    setStatus("Opened.");
+    setStatus(`Opened ${record.title || "saved item"}.`);
   } finally {
     db.close();
   }
@@ -945,11 +986,12 @@ function buildSvg() {
 
 function buildRaciSvg() {
   const activityWidth = 330;
+  const dateWidth = 150;
   const roleWidth = 122;
   const headerHeight = 62;
   const rowHeight = 78;
   const titleHeight = 82;
-  const width = activityWidth + raciState.roles.length * roleWidth + 2;
+  const width = activityWidth + dateWidth + raciState.roles.length * roleWidth + 2;
   const tableHeight = headerHeight + raciState.activities.length * rowHeight;
   const height = titleHeight + tableHeight + 44;
   const parts = [
@@ -965,13 +1007,15 @@ function buildRaciSvg() {
   parts.push(`<rect x="1" y="${tableTop}" width="${width - 2}" height="${tableHeight}" rx="18" fill="#ffffff" stroke="#d7dce2"/>`);
   parts.push(`<rect x="1" y="${tableTop}" width="${width - 2}" height="${headerHeight}" rx="18" fill="#fbfcfe"/>`);
   parts.push(svgText("Activity", 18, tableTop + 38, 12, "#16181d", 900, "start"));
+  parts.push(svgText("Date range", activityWidth + 18, tableTop + 38, 12, "#16181d", 900, "start"));
   raciState.roles.forEach((role, index) => {
-    const x = activityWidth + index * roleWidth;
+    const x = activityWidth + dateWidth + index * roleWidth;
     parts.push(svgText(role.name, x + roleWidth / 2, tableTop + 38, 12, "#16181d", 900, "middle"));
   });
 
+  parts.push(`<line x1="${activityWidth}" y1="${tableTop}" x2="${activityWidth}" y2="${tableTop + tableHeight}" stroke="#e4e7eb"/>`);
   for (let col = 0; col <= raciState.roles.length; col += 1) {
-    const x = activityWidth + col * roleWidth;
+    const x = activityWidth + dateWidth + col * roleWidth;
     parts.push(`<line x1="${x}" y1="${tableTop}" x2="${x}" y2="${tableTop + tableHeight}" stroke="#e4e7eb"/>`);
   }
   for (let row = 0; row <= raciState.activities.length; row += 1) {
@@ -985,9 +1029,10 @@ function buildRaciSvg() {
     if (activity.detail) {
       parts.push(...svgWrappedText(activity.detail, 18, top + 54, 12, "#616977", 400, 44));
     }
+    parts.push(...svgWrappedText(formatRaciDateRange(activity), activityWidth + 18, top + 32, 12, "#2d333d", 800, 18));
     raciState.roles.forEach((role, colIndex) => {
       const value = normalizeRaciValue(activity.assignments[role.id]);
-      const centerX = activityWidth + colIndex * roleWidth + roleWidth / 2;
+      const centerX = activityWidth + dateWidth + colIndex * roleWidth + roleWidth / 2;
       const centerY = top + rowHeight / 2;
       if (value) {
         const letters = value.split("");
@@ -1179,6 +1224,8 @@ document.querySelector("#addRaciActivity").addEventListener("click", () => {
     id: uid("activity"),
     name: "New Activity",
     detail: "",
+    startDate: "",
+    endDate: "",
     assignments,
   });
   renderRaci();

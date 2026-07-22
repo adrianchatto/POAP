@@ -24,6 +24,8 @@
       "id": "activity_discovery",
       "name": "Discovery workshops",
       "detail": "Confirm scope, stakeholders, goals, and success measures",
+      "startDate": "2026-07-20",
+      "endDate": "2026-07-24",
       "assignments": {
         "role_client_sponsor": "RA",
         "role_project_manager": "R",
@@ -35,6 +37,8 @@
       "id": "activity_solution_design",
       "name": "Solution design",
       "detail": "Define target design, integrations, data, and reporting needs",
+      "startDate": "2026-07-27",
+      "endDate": "2026-08-07",
       "assignments": {
         "role_client_sponsor": "C",
         "role_project_manager": "A",
@@ -46,6 +50,8 @@
       "id": "activity_build",
       "name": "Build and configuration",
       "detail": "Configure solution components and prepare test-ready release",
+      "startDate": "2026-08-10",
+      "endDate": "2026-08-21",
       "assignments": {
         "role_client_sponsor": "I",
         "role_project_manager": "A",
@@ -57,6 +63,8 @@
       "id": "activity_uat",
       "name": "UAT and sign-off",
       "detail": "Run acceptance testing, resolve defects, and capture approval",
+      "startDate": "2026-08-24",
+      "endDate": "2026-09-04",
       "assignments": {
         "role_client_sponsor": "A",
         "role_project_manager": "R",
@@ -68,6 +76,8 @@
       "id": "activity_go_live",
       "name": "Go live",
       "detail": "Coordinate release, cutover, and hypercare transition",
+      "startDate": "2026-09-07",
+      "endDate": "2026-09-11",
       "assignments": {
         "role_client_sponsor": "A",
         "role_project_manager": "R",
