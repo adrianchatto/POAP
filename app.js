@@ -167,9 +167,9 @@ const els = {
 function loadState() {
   try {
     const saved = localStorage.getItem("plan-lane-builder-state");
-    return saved ? normalizeState(JSON.parse(saved)) : structuredClone(sampleState);
+    return normalizeState(saved ? JSON.parse(saved) : structuredClone(sampleState));
   } catch {
-    return structuredClone(sampleState);
+    return normalizeState(structuredClone(sampleState));
   }
 }
 
@@ -207,11 +207,26 @@ function normalizeLane(lane) {
     name: String(lane.name || "New phase"),
     subtitle: String(lane.subtitle || ""),
     workstream: String(lane.workstream || ""),
+    resources: Array.isArray(lane.resources) ? lane.resources.map(normalizeResource) : [],
     start: clamp(Number(lane.start) || 1, 1, 52),
     duration: clamp(Number(lane.duration) || 1, 1, 52),
     color: validColor(lane.color) ? lane.color : "#1769f2",
     icon: iconOptions.some(([value]) => value === lane.icon) ? lane.icon : "dot",
   };
+}
+
+function normalizeResource(resource) {
+  return {
+    name: String(resource?.name || ""),
+    role: String(resource?.role || ""),
+  };
+}
+
+function resourceInitials(name) {
+  const words = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "?";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
 }
 
 function laneWorkstream(lane) {
@@ -412,6 +427,7 @@ function renderEditors() {
       moveItem(state.lanes, index, direction);
       render();
     },
+    customizeNode: (node, laneIndex) => renderResourceEditor(node, laneIndex),
   });
 
   renderCollectionEditor({
@@ -433,7 +449,7 @@ function renderEditors() {
   });
 }
 
-function renderCollectionEditor({ target, templateId, collection, onUpdate, onRemove, onMove }) {
+function renderCollectionEditor({ target, templateId, collection, onUpdate, onRemove, onMove, customizeNode }) {
   const template = document.querySelector(`#${templateId}`);
   target.replaceChildren();
   collection.forEach((item, index) => {
@@ -458,7 +474,61 @@ function renderCollectionEditor({ target, templateId, collection, onUpdate, onRe
       });
     });
 
+    if (customizeNode) customizeNode(node, index);
     target.append(node);
+  });
+}
+
+function renderResourceEditor(node, laneIndex) {
+  const lane = state.lanes[laneIndex];
+  const list = node.querySelector(".resource-list");
+  const addButton = node.querySelector(".add-resource");
+  if (!list || !addButton) return;
+
+  lane.resources.forEach((resource, resourceIndex) => {
+    const row = document.createElement("div");
+    row.className = "resource-row";
+    row.innerHTML = `
+      <label class="field">
+        <span>Name</span>
+        <input type="text" autocomplete="off" placeholder="e.g. Alex Morgan" value="${escapeHtml(resource.name)}" />
+      </label>
+      <label class="field">
+        <span>Role</span>
+        <input type="text" autocomplete="off" placeholder="e.g. Business Analyst" value="${escapeHtml(resource.role)}" />
+      </label>
+      <button class="mini-danger" type="button" aria-label="Remove ${escapeHtml(resource.name || "resource")}">×</button>
+    `;
+    const [nameInput, roleInput] = row.querySelectorAll("input");
+    nameInput.addEventListener("input", () => {
+      state.lanes[laneIndex].resources[resourceIndex].name = nameInput.value;
+      saveState();
+      renderDiagram();
+    });
+    roleInput.addEventListener("input", () => {
+      state.lanes[laneIndex].resources[resourceIndex].role = roleInput.value;
+      saveState();
+      renderDiagram();
+    });
+    row.querySelector("button").addEventListener("click", () => {
+      state.lanes[laneIndex].resources.splice(resourceIndex, 1);
+      render();
+    });
+    list.append(row);
+  });
+
+  if (!lane.resources.length) {
+    const empty = document.createElement("p");
+    empty.className = "resource-empty";
+    empty.textContent = "No resources assigned.";
+    list.append(empty);
+  }
+
+  addButton.addEventListener("click", () => {
+    state.lanes[laneIndex].resources.push(normalizeResource({}));
+    render();
+    const cards = els.laneEditor.querySelectorAll(".editor-card");
+    cards[laneIndex]?.querySelector(".resource-row:last-child input")?.focus();
   });
 }
 
@@ -725,6 +795,13 @@ function gridCell(text, className, row, col) {
 
 function phaseCell(lane, row, startsWorkstream = false) {
   const workstream = workstreamLabel(laneWorkstream(lane));
+  const resources = lane.resources
+    .filter((resource) => resource.name.trim())
+    .map((resource) => {
+      const detail = resource.role ? `${resource.name} — ${resource.role}` : resource.name;
+      return `<span class="resource-initial" title="${escapeHtml(detail)}" aria-label="${escapeHtml(detail)}">${escapeHtml(resourceInitials(resource.name))}</span>`;
+    })
+    .join("");
   const cell = gridCell("", `cell phase-cell${startsWorkstream ? " workstream-start" : ""}`, row, 1);
   cell.innerHTML = `
     <div class="phase-icon" style="background:${lane.color}">${escapeHtml(getIcon(lane.icon))}</div>
@@ -732,6 +809,7 @@ function phaseCell(lane, row, startsWorkstream = false) {
       ${workstream ? `<p class="workstream-badge">${escapeHtml(workstream)}</p>` : ""}
       <p class="phase-name">${escapeHtml(lane.name)}</p>
       <p class="phase-subtitle" style="color:${lane.color}">${escapeHtml(lane.subtitle)}</p>
+      ${resources ? `<div class="resource-initials" aria-label="Assigned resources">${resources}</div>` : ""}
       <p class="phase-duration">${escapeHtml(formatDuration(lane.duration))}</p>
     </div>
   `;
@@ -1097,11 +1175,15 @@ function buildSvg(options = {}) {
       parts.push(svgText(workstream.toUpperCase(), 92, top + 25, 9, "#1769f2", 900, "start"));
       parts.push(...svgWrappedText(lane.name, 82, top + 48, 13, "#16181d", 900, 34));
       parts.push(...svgWrappedText(lane.subtitle, 82, top + 70, 10, lane.color, 900, 48));
-      parts.push(svgText(formatDuration(lane.duration), 82, top + 96, 10, "#16181d", 400, "start"));
+      const initials = lane.resources.filter((resource) => resource.name.trim()).map((resource) => resourceInitials(resource.name)).join("  ");
+      if (initials) parts.push(svgText(initials, 82, top + 88, 9, "#1769f2", 900, "start"));
+      parts.push(svgText(formatDuration(lane.duration), initials ? 150 : 82, top + 96, 10, "#16181d", 400, "start"));
     } else {
       parts.push(...svgWrappedText(lane.name, 82, top + 34, 14, "#16181d", 900, 34));
       parts.push(...svgWrappedText(lane.subtitle, 82, top + 58, 11, lane.color, 900, 48));
-      parts.push(svgText(formatDuration(lane.duration), 82, top + 88, 11, "#16181d", 400, "start"));
+      const initials = lane.resources.filter((resource) => resource.name.trim()).map((resource) => resourceInitials(resource.name)).join("  ");
+      if (initials) parts.push(svgText(initials, 82, top + 78, 9, "#1769f2", 900, "start"));
+      parts.push(svgText(formatDuration(lane.duration), 82, top + 96, 10, "#16181d", 400, "start"));
     }
 
     const barX = phaseWidth + (lane.start - 1) * cellWidth + 5;
@@ -1414,7 +1496,7 @@ document.querySelector("#resetSample").addEventListener("click", () => {
   } else {
     activePlanRecordId = "";
     localStorage.removeItem("active-plan-record-id");
-    state = structuredClone(sampleState);
+    state = normalizeState(structuredClone(sampleState));
     render();
   }
   setStatus("Sample restored.");
