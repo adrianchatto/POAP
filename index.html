@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Delivery Diagram Builder</title>
-    <link rel="stylesheet" href="styles.css?v=20260727-raci-buttons" />
+    <link rel="stylesheet" href="styles.css?v=20260728-poap-scale" />
   </head>
   <body>
     <header class="topbar">
@@ -53,6 +53,21 @@
               <span>Start date</span>
               <input id="startDate" type="date" />
             </label>
+          </div>
+          <div class="field-pair">
+            <label class="field">
+              <span>Week width</span>
+              <input id="cellWidth" type="range" min="36" max="110" step="2" />
+            </label>
+            <label class="field">
+              <span>Phase width</span>
+              <input id="phaseWidth" type="range" min="220" max="520" step="10" />
+            </label>
+          </div>
+          <div class="button-row">
+            <button class="button ghost" id="compactTimeline" type="button">Compact</button>
+            <button class="button ghost" id="fitTimeline" type="button">Fit view</button>
+            <button class="button ghost" id="readableTimeline" type="button">Readable</button>
           </div>
         </section>
 
@@ -304,6 +319,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260727-raci-buttons"></script>
+    <script src="app.js?v=20260728-poap-scale"></script>
   </body>
 </html>

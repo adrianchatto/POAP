@@ -15,6 +15,8 @@ const sampleState = {
   title: "Implementation Plan",
   mode: "weeks",
   columns: 10,
+  cellWidth: 88,
+  phaseWidth: 420,
   startDate: "2026-07-20",
   showLegend: true,
   lanes: [
@@ -144,6 +146,8 @@ const els = {
   raciOpportunity: document.querySelector("#raciOpportunity"),
   previewTitle: document.querySelector("#previewTitle"),
   columns: document.querySelector("#columnCount"),
+  cellWidth: document.querySelector("#cellWidth"),
+  phaseWidth: document.querySelector("#phaseWidth"),
   startDate: document.querySelector("#startDate"),
   laneEditor: document.querySelector("#laneEditor"),
   milestoneEditor: document.querySelector("#milestoneEditor"),
@@ -191,6 +195,8 @@ function normalizeState(next) {
     ...structuredClone(sampleState),
     ...next,
     columns: clamp(Number(next.columns) || 10, 1, 52),
+    cellWidth: clamp(Number(next.cellWidth) || 88, 36, 110),
+    phaseWidth: clamp(Number(next.phaseWidth) || 420, 220, 520),
     lanes: Array.isArray(next.lanes) ? next.lanes.map(normalizeLane) : [],
     milestones: Array.isArray(next.milestones) ? next.milestones.map(normalizeMilestone) : [],
   };
@@ -371,6 +377,8 @@ function renderControls() {
   els.title.value = state.title;
   els.previewTitle.textContent = state.title;
   els.columns.value = state.columns;
+  els.cellWidth.value = state.cellWidth;
+  els.phaseWidth.value = state.phaseWidth;
   els.startDate.value = state.startDate;
   els.showLegend.checked = state.showLegend;
   document.querySelectorAll(".segmented button").forEach((button) => {
@@ -441,7 +449,7 @@ function renderCollectionEditor({ target, templateId, collection, onUpdate, onRe
           ...iconOptions.map(([value, label]) => new Option(`${getIcon(value)} ${label}`, value)),
         );
       }
-      input.value = item[key];
+      input.value = item[key] ?? "";
       input.max = ["start", "duration", "position"].includes(key) ? state.columns : input.max;
       input.addEventListener("input", () => {
         const value = input.type === "number" ? Number(input.value) : input.value;
@@ -578,11 +586,15 @@ function renderDiagram() {
   els.diagram.style.setProperty("--columns", state.columns);
   els.diagram.style.setProperty("--rows", state.lanes.length);
   els.diagram.style.setProperty("--legend-count", Math.max(state.milestones.length, 1));
+  els.diagram.style.setProperty("--cell-width", `${state.cellWidth}px`);
+  els.diagram.style.setProperty("--phase-width", `${state.phaseWidth}px`);
 
   const chart = document.createElement("div");
   chart.className = "chart";
   chart.style.setProperty("--columns", state.columns);
   chart.style.setProperty("--rows", state.lanes.length);
+  chart.style.setProperty("--cell-width", `${state.cellWidth}px`);
+  chart.style.setProperty("--phase-width", `${state.phaseWidth}px`);
 
   chart.append(gridCell("PHASE", "cell header phase-header", 1, 1));
   for (let col = 1; col <= state.columns; col += 1) {
@@ -1035,8 +1047,8 @@ function activeTitle() {
 }
 
 function buildSvg() {
-  const phaseWidth = 420;
-  const cellWidth = 88;
+  const phaseWidth = clamp(Number(state.phaseWidth) || 420, 220, 520);
+  const cellWidth = clamp(Number(state.cellWidth) || 88, 36, 110);
   const headerHeight = 58;
   const rowHeight = 104;
   const chartWidth = phaseWidth + state.columns * cellWidth;
@@ -1298,6 +1310,16 @@ els.columns.addEventListener("input", () => {
   render();
 });
 
+els.cellWidth.addEventListener("input", () => {
+  state.cellWidth = Number(els.cellWidth.value);
+  render();
+});
+
+els.phaseWidth.addEventListener("input", () => {
+  state.phaseWidth = Number(els.phaseWidth.value);
+  render();
+});
+
 els.startDate.addEventListener("input", () => {
   state.startDate = els.startDate.value;
   render();
@@ -1390,6 +1412,26 @@ document.querySelector("#exportSvg").addEventListener("click", exportSvg);
 document.querySelector("#exportPng").addEventListener("click", exportPng);
 document.querySelector("#narrowEditor").addEventListener("click", () => resizeEditor(-90));
 document.querySelector("#wideEditor").addEventListener("click", () => resizeEditor(90));
+document.querySelector("#compactTimeline").addEventListener("click", () => {
+  state.cellWidth = 42;
+  state.phaseWidth = Math.min(state.phaseWidth, 280);
+  render();
+  setStatus("Timeline compacted.");
+});
+document.querySelector("#readableTimeline").addEventListener("click", () => {
+  state.cellWidth = 88;
+  state.phaseWidth = 420;
+  render();
+  setStatus("Timeline set to readable sizing.");
+});
+document.querySelector("#fitTimeline").addEventListener("click", () => {
+  const available = document.querySelector(".diagram-scroll")?.clientWidth || window.innerWidth;
+  const phaseWidth = clamp(Math.min(state.phaseWidth, 300), 220, 520);
+  state.phaseWidth = phaseWidth;
+  state.cellWidth = clamp(Math.floor((available - phaseWidth - 36) / Math.max(state.columns, 1)), 36, 88);
+  render();
+  setStatus("Timeline fitted to the current view.");
+});
 document.querySelector("#savePlanRecord").addEventListener("click", () => saveRecord("plan"));
 document.querySelector("#saveRaciRecord").addEventListener("click", () => saveRecord("raci"));
 document.querySelector("#savePlanVersion").addEventListener("click", () => saveRecord("plan", { createVersion: true }));
