@@ -1027,8 +1027,8 @@ function download(filename, text, type) {
 }
 
 function exportSvg() {
-  download(`${slugify(activeTitle())}.svg`, buildActiveSvg(), "image/svg+xml");
-  setStatus("SVG exported.");
+  download(`${slugify(activeTitle())}.svg`, buildActiveSvg({ forExport: true }), "image/svg+xml");
+  setStatus("Readable SVG exported.");
 }
 
 function exportJson(type = activeTool) {
@@ -1038,17 +1038,19 @@ function exportJson(type = activeTool) {
   setStatus("JSON exported.");
 }
 
-function buildActiveSvg() {
-  return activeTool === "raci" ? buildRaciSvg() : buildSvg();
+function buildActiveSvg(options = {}) {
+  return activeTool === "raci" ? buildRaciSvg(options) : buildSvg(options);
 }
 
 function activeTitle() {
   return activeTool === "raci" ? raciState.title : state.title;
 }
 
-function buildSvg() {
-  const phaseWidth = clamp(Number(state.phaseWidth) || 420, 220, 520);
-  const cellWidth = clamp(Number(state.cellWidth) || 88, 36, 110);
+function buildSvg(options = {}) {
+  const previewPhaseWidth = clamp(Number(state.phaseWidth) || 420, 220, 520);
+  const previewCellWidth = clamp(Number(state.cellWidth) || 88, 36, 110);
+  const phaseWidth = options.forExport ? Math.max(previewPhaseWidth, 420) : previewPhaseWidth;
+  const cellWidth = options.forExport ? Math.max(previewCellWidth, 76) : previewCellWidth;
   const headerHeight = 58;
   const rowHeight = 104;
   const chartWidth = phaseWidth + state.columns * cellWidth;
@@ -1058,6 +1060,7 @@ function buildSvg() {
   const height = chartHeight + legendHeight + 32;
   const parts = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
+    svgExportStyle(),
     `<rect width="100%" height="100%" fill="#ffffff"/>`,
     `<rect x="1" y="1" width="${chartWidth}" height="${chartHeight}" rx="18" fill="#ffffff" stroke="#d7dce2"/>`,
   ];
@@ -1147,6 +1150,7 @@ function buildRaciSvg() {
   const height = titleHeight + tableHeight + 44;
   const parts = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
+    svgExportStyle(),
     `<rect width="100%" height="100%" fill="#ffffff"/>`,
     svgText(raciState.title, 1, 34, 26, "#16181d", 900, "start"),
   ];
@@ -1216,7 +1220,7 @@ function raciColor(value) {
 }
 
 function exportPng() {
-  const svg = buildActiveSvg();
+  const svg = buildActiveSvg({ forExport: true });
   const image = new Image();
   const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
   image.onload = () => {
@@ -1224,6 +1228,8 @@ function exportPng() {
     canvas.width = image.naturalWidth * 2;
     canvas.height = image.naturalHeight * 2;
     const context = canvas.getContext("2d");
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
     context.fillStyle = "#ffffff";
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
@@ -1239,7 +1245,7 @@ function exportPng() {
       link.download = `${slugify(activeTitle())}.png`;
       link.click();
       URL.revokeObjectURL(pngUrl);
-      setStatus("PNG exported.");
+      setStatus("Readable PNG exported.");
     }, "image/png");
   };
   image.onerror = () => {
@@ -1250,7 +1256,14 @@ function exportPng() {
 }
 
 function svgText(text, x, y, size, color, weight, anchor) {
-  return `<text x="${x}" y="${y}" fill="${color}" font-family="Inter, Arial, sans-serif" font-size="${size}" font-weight="${weight}" text-anchor="${anchor}">${escapeHtml(text)}</text>`;
+  return `<text x="${x}" y="${y}" fill="${color}" font-family="Inter, Arial, sans-serif" font-size="${size}" font-weight="${weight}" text-anchor="${anchor}" text-decoration="none">${escapeHtml(text)}</text>`;
+}
+
+function svgExportStyle() {
+  return `<style>
+    text { text-decoration: none; text-rendering: geometricPrecision; -webkit-font-smoothing: antialiased; }
+    line, rect, circle { shape-rendering: geometricPrecision; }
+  </style>`;
 }
 
 function svgMultilineText(text, x, y, size, color, weight, anchor) {
