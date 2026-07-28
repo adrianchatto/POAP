@@ -8,10 +8,10 @@ services:
     command: >
       /bin/sh -c "set -eu;
       apk add --no-cache curl;
-      curl -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/index.html -o /usr/share/nginx/html/index.html;
-      curl -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/styles.css -o /usr/share/nginx/html/styles.css;
-      curl -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/app.js -o /usr/share/nginx/html/app.js;
-      curl -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/implementation-plan.json -o /usr/share/nginx/html/implementation-plan.json;
-      curl -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/raci-example.json -o /usr/share/nginx/html/raci-example.json;
-      curl -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/centrica-poap-import.json -o /usr/share/nginx/html/centrica-poap-import.json;
+      curl --connect-timeout 10 --max-time 60 -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/index.html -o /usr/share/nginx/html/index.html || true;
+      curl --connect-timeout 10 --max-time 60 -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/styles.css -o /usr/share/nginx/html/styles.css || true;
+      curl --connect-timeout 10 --max-time 60 -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/app.js -o /usr/share/nginx/html/app.js || true;
+      curl --connect-timeout 10 --max-time 60 -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/implementation-plan.json -o /usr/share/nginx/html/implementation-plan.json || true;
+      curl --connect-timeout 10 --max-time 60 -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/raci-example.json -o /usr/share/nginx/html/raci-example.json || true;
+      curl --connect-timeout 10 --max-time 60 -fsSL https://raw.githubusercontent.com/adrianchatto/POAP/main/centrica-poap-import.json -o /usr/share/nginx/html/centrica-poap-import.json || true;
       exec nginx -g 'daemon off;'"
