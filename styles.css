@@ -141,6 +141,50 @@ select {
   padding: 18px;
 }
 
+.workspace.editor-collapsed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.workspace.editor-collapsed > .tool-panel {
+  display: none !important;
+}
+
+.details-page-heading {
+  display: none;
+}
+
+body.details-page {
+  overflow: hidden;
+}
+
+body.details-page .topbar,
+body.details-page .canvas-shell {
+  display: none;
+}
+
+body.details-page .workspace {
+  display: block;
+  height: 100vh;
+  padding: 0;
+}
+
+body.details-page .tool-panel:not(.hidden) {
+  width: min(920px, 100%);
+  max-width: none;
+  min-width: 0;
+  max-height: 100vh;
+  margin: 0 auto;
+  padding: 28px;
+  resize: none;
+}
+
+body.details-page .details-page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
 .editor {
   display: flex;
   flex-direction: column;
@@ -321,10 +365,37 @@ button:focus-visible {
 }
 
 .card-title {
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.drag-handle {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #7a8492;
+  cursor: grab;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.editor-card.dragging {
+  opacity: 0.45;
+}
+
+.editor-card.drag-over {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(23, 105, 242, 0.12);
 }
 
 .icon-button {
@@ -708,20 +779,20 @@ button:focus-visible {
 }
 
 .legend {
-  display: grid;
-  grid-template-columns: repeat(var(--legend-count), minmax(132px, 1fr));
-  align-items: start;
-  gap: 14px;
+  position: relative;
   margin-top: 28px;
+  height: 154px;
   min-width: calc(var(--phase-width) + (var(--columns) * var(--cell-width)));
 }
 
 .legend-item {
-  display: grid;
-  grid-template-columns: 1fr 32px;
-  gap: 10px;
-  align-items: start;
+  position: absolute;
+  left: calc(var(--phase-width) + ((var(--position) - 0.5) * var(--cell-width)));
+  transform: translateX(-50%);
+  width: min(150px, calc(var(--cell-width) * 1.65));
   text-align: center;
+  cursor: ew-resize;
+  touch-action: none;
 }
 
 .legend-content {
@@ -746,13 +817,6 @@ button:focus-visible {
   margin: 5px 0 0;
   color: #2d333d;
   line-height: 1.22;
-}
-
-.chevron {
-  padding-top: 18px;
-  color: #8d929a;
-  font-size: 40px;
-  font-weight: 300;
 }
 
 .raci-assignment-grid {

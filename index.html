@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Delivery Diagram Builder</title>
-    <link rel="stylesheet" href="styles.css?v=20260728-resources" />
+    <link rel="stylesheet" href="styles.css?v=20260729-drag-layout" />
   </head>
   <body>
     <header class="topbar">
@@ -17,6 +17,8 @@
         </nav>
       </div>
       <div class="topbar-actions">
+        <button class="button ghost" id="toggleEditor" type="button">Hide details</button>
+        <button class="button ghost" id="openDetails" type="button">More details</button>
         <button class="button ghost" id="narrowEditor" type="button">Editor -</button>
         <button class="button ghost" id="wideEditor" type="button">Editor +</button>
         <button class="button ghost" id="resetSample" type="button">Sample</button>
@@ -28,6 +30,13 @@
 
     <main class="workspace">
       <aside class="editor tool-panel" id="planEditor" aria-label="Plan editor">
+        <div class="details-page-heading">
+          <div>
+            <p class="eyebrow">Plan settings</p>
+            <h2>Configure plan details</h2>
+          </div>
+          <button class="button ghost" id="closeDetails" type="button">Back to plan</button>
+        </div>
         <section class="panel">
           <div class="panel-heading">
             <h2>Timeline</h2>
@@ -121,6 +130,13 @@
       </aside>
 
       <aside class="editor tool-panel hidden" id="raciEditor" aria-label="RACI editor">
+        <div class="details-page-heading">
+          <div>
+            <p class="eyebrow">RACI settings</p>
+            <h2>Configure RACI details</h2>
+          </div>
+          <button class="button ghost close-details" type="button">Back to matrix</button>
+        </div>
         <section class="panel">
           <div class="panel-heading">
             <h2>RACI</h2>
@@ -211,6 +227,7 @@
     <template id="laneTemplate">
       <article class="editor-card">
         <div class="card-top">
+          <button class="drag-handle" type="button" aria-label="Drag to reorder" title="Drag to reorder">⠿</button>
           <strong class="card-title"></strong>
           <button class="mini-danger" type="button">Remove</button>
         </div>
@@ -257,6 +274,7 @@
     <template id="milestoneTemplate">
       <article class="editor-card">
         <div class="card-top">
+          <button class="drag-handle" type="button" aria-label="Drag to reorder" title="Drag to reorder">⠿</button>
           <strong class="card-title"></strong>
           <button class="mini-danger" type="button">Remove</button>
         </div>
@@ -326,6 +344,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260728-resources"></script>
+    <script src="app.js?v=20260729-drag-layout"></script>
   </body>
 </html>
