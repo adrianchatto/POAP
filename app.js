@@ -132,6 +132,7 @@ let activeTool = localStorage.getItem("delivery-diagram-active-tool") || "plan";
 let activePlanRecordId = localStorage.getItem("active-plan-record-id") || "";
 let activeRaciRecordId = localStorage.getItem("active-raci-record-id") || "";
 let editorWidth = clamp(Number(localStorage.getItem("delivery-diagram-editor-width")) || 390, 320, 760);
+let editorVisible = localStorage.getItem("delivery-diagram-editor-visible") !== "false";
 let state = loadState();
 let raciState = loadRaciState();
 
@@ -374,8 +375,27 @@ function switchTool(tool) {
   els.raciEditor.classList.toggle("hidden", activeTool !== "raci");
   els.showLegend.closest(".toggle").classList.toggle("hidden", activeTool !== "plan");
   els.raciKey.classList.toggle("hidden", activeTool !== "raci");
+  applyEditorVisibility();
   if (activeTool === "plan") render();
   else renderRaci();
+}
+
+function applyEditorVisibility() {
+  els.workspace.classList.toggle("editor-collapsed", !editorVisible && !document.body.classList.contains("details-page"));
+  const button = document.querySelector("#toggleEditor");
+  if (button) button.textContent = editorVisible ? "Hide details" : "Show details";
+  localStorage.setItem("delivery-diagram-editor-visible", String(editorVisible));
+}
+
+function setDetailsPage(open) {
+  document.body.classList.toggle("details-page", open);
+  if (open) {
+    editorVisible = true;
+    history.replaceState(null, "", "#details");
+  } else if (location.hash === "#details") {
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+  applyEditorVisibility();
 }
 
 function applyEditorWidth() {
@@ -455,7 +475,7 @@ function renderCollectionEditor({ target, templateId, collection, onUpdate, onRe
   collection.forEach((item, index) => {
     const node = template.content.firstElementChild.cloneNode(true);
     node.querySelector(".card-title").textContent = item.name;
-    addMoveControls(node.querySelector(".card-top"), index, collection.length, onMove);
+    enableDragReorder(node, target, index, collection, onMove);
     node.querySelector(".mini-danger").addEventListener("click", () => onRemove(index));
 
     node.querySelectorAll("input, select").forEach((input) => {
@@ -476,6 +496,45 @@ function renderCollectionEditor({ target, templateId, collection, onUpdate, onRe
 
     if (customizeNode) customizeNode(node, index);
     target.append(node);
+  });
+}
+
+function enableDragReorder(node, target, index, collection, onMove) {
+  const handle = node.querySelector(".drag-handle");
+  if (!handle || !onMove) {
+    handle?.remove();
+    return;
+  }
+  handle.addEventListener("pointerdown", () => {
+    node.draggable = true;
+  });
+  node.addEventListener("dragstart", (event) => {
+    if (!node.draggable) {
+      event.preventDefault();
+      return;
+    }
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(index));
+    node.classList.add("dragging");
+  });
+  node.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    node.classList.add("drag-over");
+  });
+  node.addEventListener("dragleave", () => node.classList.remove("drag-over"));
+  node.addEventListener("drop", (event) => {
+    event.preventDefault();
+    const fromIndex = Number(event.dataTransfer.getData("text/plain"));
+    node.classList.remove("drag-over");
+    if (!Number.isInteger(fromIndex) || fromIndex === index) return;
+    const [item] = collection.splice(fromIndex, 1);
+    collection.splice(index, 0, item);
+    onMove(index, 0);
+  });
+  node.addEventListener("dragend", () => {
+    node.draggable = false;
+    node.classList.remove("dragging");
+    target.querySelectorAll(".drag-over").forEach((card) => card.classList.remove("drag-over"));
   });
 }
 
@@ -830,6 +889,7 @@ function bar(lane, rowIndex) {
 function milestoneNode(milestone, rowIndex) {
   const node = document.createElement("div");
   node.className = "milestone";
+  node.dataset.milestoneIndex = state.milestones.indexOf(milestone);
   node.style.setProperty("--row", rowIndex);
   node.style.setProperty("--position", milestone.position);
   node.style.setProperty("--milestone-color", milestone.color);
@@ -847,6 +907,8 @@ function legend() {
   state.milestones.forEach((milestone, index) => {
     const item = document.createElement("div");
     item.className = "legend-item";
+    item.style.setProperty("--position", milestone.position);
+    item.dataset.milestoneIndex = index;
     item.innerHTML = `
       <div class="legend-content">
         <div class="legend-icon" style="background:${milestone.color}">${escapeHtml(getIcon(milestone.icon))}</div>
@@ -855,11 +917,41 @@ function legend() {
           <p class="legend-detail">${escapeHtml(milestone.detail)}</p>
         </div>
       </div>
-      ${index < state.milestones.length - 1 ? '<div class="chevron">›</div>' : ""}
     `;
+    enableMilestoneDrag(item, index);
     node.append(item);
   });
   return node;
+}
+
+function enableMilestoneDrag(node, index) {
+  node.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    node.setPointerCapture(event.pointerId);
+    const move = (moveEvent) => {
+      const chart = els.diagram.querySelector(".chart");
+      if (!chart) return;
+      const rect = chart.getBoundingClientRect();
+      const phasePixels = state.phaseWidth * (rect.width / (state.phaseWidth + state.columns * state.cellWidth));
+      const timelineWidth = rect.width - phasePixels;
+      const relativeX = clamp(moveEvent.clientX - rect.left - phasePixels, 0, timelineWidth);
+      state.milestones[index].position = clamp(Math.round((relativeX / timelineWidth) * state.columns + 0.5), 1, state.columns);
+      saveState();
+      node.style.setProperty("--position", state.milestones[index].position);
+      els.diagram.querySelectorAll(".milestone").forEach((marker) => {
+        if (Number(marker.dataset.milestoneIndex) === index) {
+          marker.style.setProperty("--position", state.milestones[index].position);
+        }
+      });
+    };
+    const up = () => {
+      node.removeEventListener("pointermove", move);
+      node.removeEventListener("pointerup", up);
+      render();
+    };
+    node.addEventListener("pointermove", move);
+    node.addEventListener("pointerup", up, { once: true });
+  });
 }
 
 function escapeHtml(value) {
@@ -1174,13 +1266,13 @@ function buildSvg(options = {}) {
       parts.push(`<rect x="82" y="${top + 12}" width="${badgeWidth}" height="18" rx="9" fill="#eef4ff"/>`);
       parts.push(svgText(workstream.toUpperCase(), 92, top + 25, 9, "#1769f2", 900, "start"));
       parts.push(...svgWrappedText(lane.name, 82, top + 48, 13, "#16181d", 900, 34));
-      parts.push(...svgWrappedText(lane.subtitle, 82, top + 70, 10, lane.color, 900, 48));
+      parts.push(...svgWrappedText(lane.subtitle, 82, top + 70, 10, lane.color, 900, 48, "start", 2));
       const initials = lane.resources.filter((resource) => resource.name.trim()).map((resource) => resourceInitials(resource.name)).join("  ");
       if (initials) parts.push(svgText(initials, 82, top + 88, 9, "#1769f2", 900, "start"));
       parts.push(svgText(formatDuration(lane.duration), initials ? 150 : 82, top + 96, 10, "#16181d", 400, "start"));
     } else {
       parts.push(...svgWrappedText(lane.name, 82, top + 34, 14, "#16181d", 900, 34));
-      parts.push(...svgWrappedText(lane.subtitle, 82, top + 58, 11, lane.color, 900, 48));
+      parts.push(...svgWrappedText(lane.subtitle, 82, top + 58, 11, lane.color, 900, 48, "start", 2));
       const initials = lane.resources.filter((resource) => resource.name.trim()).map((resource) => resourceInitials(resource.name)).join("  ");
       if (initials) parts.push(svgText(initials, 82, top + 78, 9, "#1769f2", 900, "start"));
       parts.push(svgText(formatDuration(lane.duration), 82, top + 96, 10, "#16181d", 400, "start"));
@@ -1202,17 +1294,14 @@ function buildSvg(options = {}) {
   }
 
   if (state.showLegend && state.milestones.length) {
-    const slot = chartWidth / state.milestones.length;
     const legendTop = chartHeight + 42;
     state.milestones.forEach((milestone, index) => {
-      const x = slot * index + slot / 2;
+      const x = phaseWidth + (milestone.position - 0.5) * cellWidth;
+      const textWidth = Math.max(10, Math.floor(Math.min(150, cellWidth * 1.65) / 9));
       parts.push(`<circle cx="${x}" cy="${legendTop + 27}" r="27" fill="${milestone.color}"/>`);
       parts.push(svgText(getIcon(milestone.icon), x, legendTop + 36, 25, "#ffffff", 900, "middle"));
-      parts.push(...svgWrappedText(milestone.name, x, legendTop + 84, 18, "#16181d", 900, Math.max(8, Math.floor(slot / 10)), "middle"));
-      parts.push(...svgWrappedText(milestone.detail, x, legendTop + 116, 16, "#2d333d", 400, Math.max(8, Math.floor(slot / 10)), "middle"));
-      if (index < state.milestones.length - 1) {
-        parts.push(svgText("›", slot * (index + 1), legendTop + 43, 40, "#8d929a", 300, "middle"));
-      }
+      parts.push(...svgWrappedText(milestone.name, x, legendTop + 84, 16, "#16181d", 900, textWidth, "middle"));
+      parts.push(...svgWrappedText(milestone.detail, x, legendTop + 112, 13, "#2d333d", 400, textWidth, "middle"));
     });
   }
 
@@ -1354,8 +1443,8 @@ function svgMultilineText(text, x, y, size, color, weight, anchor) {
     .map((line, index) => svgText(line, x, y + index * (size + 3), size, color, weight, anchor));
 }
 
-function svgWrappedText(text, x, y, size, color, weight, maxChars, anchor = "start") {
-  return wrapWords(text, maxChars).map((line, index) =>
+function svgWrappedText(text, x, y, size, color, weight, maxChars, anchor = "start", maxLines = 3) {
+  return wrapWords(text, maxChars).slice(0, maxLines).map((line, index) =>
     svgText(line, x, y + index * (size + 3), size, color, weight, anchor),
   );
 }
@@ -1507,6 +1596,14 @@ document.querySelector("#exportSvg").addEventListener("click", exportSvg);
 document.querySelector("#exportPng").addEventListener("click", exportPng);
 document.querySelector("#narrowEditor").addEventListener("click", () => resizeEditor(-90));
 document.querySelector("#wideEditor").addEventListener("click", () => resizeEditor(90));
+document.querySelector("#toggleEditor").addEventListener("click", () => {
+  editorVisible = !editorVisible;
+  applyEditorVisibility();
+});
+document.querySelector("#openDetails").addEventListener("click", () => setDetailsPage(true));
+document.querySelectorAll("#closeDetails, .close-details").forEach((button) => {
+  button.addEventListener("click", () => setDetailsPage(false));
+});
 document.querySelector("#compactTimeline").addEventListener("click", () => {
   state.cellWidth = 42;
   state.phaseWidth = Math.min(state.phaseWidth, 280);
@@ -1581,5 +1678,6 @@ document.querySelector("#importRaciJson").addEventListener("change", async (even
 });
 
 applyEditorWidth();
+if (location.hash === "#details") setDetailsPage(true);
 switchTool(activeTool);
 renderRecordLists();
